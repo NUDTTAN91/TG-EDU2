@@ -1,0 +1,167 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>布置作业 · 教师控制台</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css"><link rel="stylesheet" href="assets/css/teacher-assign.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">院校 A · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--sky)">教师</span> 教师工作台</div>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="dashboard-teacher.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="teacher-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的课程</a>
+<a class="side-link active" href="teacher-assign.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 布置作业</a>
+<a class="side-link" href="teacher-grade.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业 <span class="badge">23</span></a>
+<a class="side-link" href="teacher-scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">其他</div>
+<a class="side-link" href="teacher-messages.html"><span class="ico"><i data-lucide="message-circle"></i></span> 学生留言 <span class="badge">5</span></a>
+<a class="side-link" href="teacher-settings.html"><span class="ico"><i data-lucide="settings"></i></span> 设置</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--lavender)"><i data-lucide="user"></i></div><div><div class="user-name">教师 001</div><div class="user-role">计算机科学与技术</div></div></div><button class="logout-btn" onclick="location.href='login.html'"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar">
+  <h1><i data-lucide="pen-tool"></i> 布置新作业</h1>
+  <div class="action-bar">
+    <span class="draft-note">自动保存草稿</span>
+    <button class="btn btn-secondary">存为草稿</button>
+    <button class="btn btn-primary" id="publishBtn" onclick="handlePublish()">发布作业 →</button>
+  </div>
+</div>
+
+<div class="assign-layout">
+  <!-- Left: Form -->
+  <div class="form-panel anim">
+
+    <!-- Section 1: Basic Info -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">1</span><span class="section-title">基本信息</span></div>
+      <div class="form-group">
+        <label class="form-label">作业类型</label>
+        <div class="type-cards">
+          <div class="type-card selected" onclick="selectType(this,'homework')"><span class="type-icon"><i data-lucide="file-text"></i></span>课后作业</div>
+          <div class="type-card" onclick="selectType(this,'experiment')"><span class="type-icon"><i data-lucide="flask-conical"></i></span>实验报告</div>
+          <div class="type-card" onclick="selectType(this,'essay')"><span class="type-icon"><i data-lucide="pen-tool"></i></span>论文</div>
+          <div class="type-card" onclick="selectType(this,'project')"><span class="type-icon"><i data-lucide="package"></i></span>项目</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">所属课程</label>
+        <select class="form-select" id="courseSelect" onchange="updatePreview()">
+          <option>数据结构与算法</option>
+          <option>高等数学 A</option>
+          <option>算法设计</option>
+          <option>学术英语写作</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">作业标题</label>
+        <input class="form-input" id="titleInput" placeholder="例如：实验报告 5 - 二叉搜索树" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <!-- Section 2: Requirements -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">2</span><span class="section-title">作业要求</span></div>
+      <div class="form-group">
+        <label class="form-label">描述 / 要求</label>
+        <textarea class="form-textarea" id="descInput" placeholder="描述作业要求、注意事项、参考资料等…" style="min-height:120px" oninput="updatePreview()"></textarea>
+        <div class="form-hint">支持简单文本，学生会看到这段描述</div>
+      </div>
+      <div class="row3">
+        <div class="form-group">
+          <label class="form-label">满分分值</label>
+          <input class="form-input" type="number" id="scoreInput" placeholder="100" value="100" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">截止时间</label>
+          <input class="form-input" type="datetime-local" id="deadlineInput" onchange="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">文件格式</label>
+          <input class="form-input" id="formatInput" value="pdf, docx, zip" oninput="updatePreview()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Target -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">3</span><span class="section-title">发布范围</span></div>
+      <div class="form-group">
+        <label class="form-label">选择班级</label>
+        <div class="class-chips" id="classChips">
+          <label class="chip checked" onclick="toggleChip(this)"><input type="checkbox" checked><span>2024级 计算机3班</span><span class="chip-count">48人</span></label>
+          <label class="chip checked" onclick="toggleChip(this)"><input type="checkbox" checked><span>2024级 计算机1班</span><span class="chip-count">46人</span></label>
+          <label class="chip checked" onclick="toggleChip(this)"><input type="checkbox" checked><span>2024级 计算机2班</span><span class="chip-count">48人</span></label>
+          <label class="chip" onclick="toggleChip(this)"><input type="checkbox"><span>2024级 软件工程1班</span><span class="chip-count">44人</span></label>
+          <button class="select-all" onclick="toggleAll()">全选 / 取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Options -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">4</span><span class="section-title">高级选项</span></div>
+      <div class="toggle-rows">
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">允许截止后补交</div><div class="toggle-desc">截止后仍可提交，但会标记为迟交</div></div>
+          <div class="toggle" onclick="this.classList.toggle('on');updatePreview()"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">允许覆盖提交</div><div class="toggle-desc">学生可以在截止前重新上传文件</div></div>
+          <div class="toggle on" onclick="this.classList.toggle('on');updatePreview()"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">提交后显示参考答案</div><div class="toggle-desc">学生提交后自动展示参考答案</div></div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Preview -->
+  <div class="preview-panel anim">
+    <div style="font-size:0.78rem;font-weight:600;color:#999;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+      <i data-lucide="eye"></i> 学生视角预览
+      <span class="handwriting-note" style="font-size:0.85rem">← 学生看到的就是这样</span>
+    </div>
+    <div class="preview-card">
+      <div class="preview-head">
+        <h3><i data-lucide="clipboard-list"></i> 作业通知</h3>
+        <span class="preview-tag">新作业</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-type" id="pvType">课后作业</div>
+        <div class="preview-title" id="pvTitle">作业标题将显示在这里</div>
+        <div class="preview-meta">
+          <span class="preview-meta-item" id="pvCourse"><i data-lucide="book-open"></i> 数据结构与算法</span>
+          <span class="preview-meta-item" id="pvScore"><i data-lucide="target"></i> 100 分</span>
+          <span class="preview-meta-item" id="pvDeadline"><i data-lucide="clock"></i> 待设定截止时间</span>
+        </div>
+        <div class="preview-desc" id="pvDesc">在这里输入作业描述，学生会看到这段文字。可以写明要求、注意事项、参考资料等。</div>
+        <div style="font-size:0.72rem;color:#aaa;margin-bottom:6px">接受文件格式：</div>
+        <div class="preview-meta" id="pvFormat"><span class="preview-meta-item">pdf, docx, zip</span></div>
+        <div style="font-size:0.72rem;color:#aaa;margin-bottom:6px;margin-top:10px">发布到：</div>
+        <div class="preview-classes" id="pvClasses">
+          <span class="preview-class-tag">2024级 计算机3班</span>
+          <span class="preview-class-tag">2024级 计算机1班</span>
+          <span class="preview-class-tag">2024级 计算机2班</span>
+        </div>
+        <div class="preview-settings" id="pvSettings">
+          <span class="preview-setting">允许覆盖提交</span>
+        </div>
+      </div>
+      <div class="preview-footer">
+        <span>教师 001 · 计算机科学与技术</span>
+        <span>刚刚发布</span>
+      </div>
+    </div>
+  </div>
+</div>
+</main></div>
+
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/teacher-assign.js"></script>
+</body></html>

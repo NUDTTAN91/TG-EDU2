@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>操作日志 · 管理控制台</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="assets/css/admin-logs.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard-admin.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="admin-schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校管理</a>
+<a class="side-link" href="admin-users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="admin-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="admin-stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="admin-settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link active" href="admin-logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name">管理员</div><div class="user-role">超级管理员</div></div></div><button class="logout-btn" onclick="location.href='login.html'"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="clipboard-list"></i> 操作日志</h1><button class="btn btn-secondary">导出日志</button></div>
+
+<div class="log-filters anim">
+<button class="filter-btn active">全部</button>
+<button class="filter-btn">登录</button>
+<button class="filter-btn">用户管理</button>
+<button class="filter-btn">系统设置</button>
+<button class="filter-btn">院校管理</button>
+</div>
+
+<div class="panel anim">
+<div class="log-item"><div class="log-time">2026-06-06 14:32</div><div class="log-icon"><i data-lucide="key"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 登录了系统</div><div class="log-meta">IP: 192.168.x.x · 浏览器: Chrome</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-06 10:15</div><div class="log-icon"><i data-lucide="building-2"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 修改了 <strong>院校 D</strong> 的状态为「试运行」</div><div class="log-meta">院校管理</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-05 16:48</div><div class="log-icon"><i data-lucide="user"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 为院校 A 新增了 <strong>3 个教师账号</strong></div><div class="log-meta">用户管理</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-05 09:00</div><div class="log-icon"><i data-lucide="settings"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 修改了文件大小限制：<strong>100MB → 200MB</strong></div><div class="log-meta">系统设置 · 文件设置</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-04 03:00</div><div class="log-icon"><i data-lucide="database"></i></div><div class="log-body"><div class="log-text">系统自动备份完成，数据量 <strong>2.4 GB</strong></div><div class="log-meta">系统 · 定时任务</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-03 11:22</div><div class="log-icon"><i data-lucide="user"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 禁用了用户 <strong>S099</strong>（院校 B · 学生）</div><div class="log-meta">用户管理 · 原因: 多次违规</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-02 08:30</div><div class="log-icon"><i data-lucide="key"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 登录了系统</div><div class="log-meta">IP: 192.168.x.x · 浏览器: Chrome</div></div></div>
+<div class="log-item"><div class="log-time">2026-06-01 14:10</div><div class="log-icon"><i data-lucide="building-2"></i></div><div class="log-body"><div class="log-text"><strong>管理员</strong> 新增了院校 <strong>院校 D</strong></div><div class="log-meta">院校管理</div></div></div>
+</div>
+</main></div>
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/admin-logs.js"></script>
+</body></html>

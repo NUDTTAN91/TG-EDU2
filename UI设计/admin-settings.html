@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>系统设置 · 管理控制台</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="assets/css/admin-settings.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard-admin.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="admin-schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校管理</a>
+<a class="side-link" href="admin-users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="admin-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="admin-stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link active" href="admin-settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="admin-logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name">管理员</div><div class="user-role">超级管理员</div></div></div><button class="logout-btn" onclick="location.href='login.html'"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="wrench"></i> 系统设置</h1><button class="btn btn-primary">保存设置</button></div>
+
+<div class="settings-grid anim">
+<div class="setting-card">
+<h3><i data-lucide="folder"></i> 文件设置</h3>
+<div class="setting-row"><div><div class="setting-label">单文件大小限制</div><div class="setting-desc">学生上传单个文件的最大体积</div></div><select class="form-select" style="width:100px"><option>100 MB</option><option selected>200 MB</option><option>500 MB</option></select></div>
+<div class="setting-row"><div><div class="setting-label">允许的文件格式</div><div class="setting-desc">用逗号分隔扩展名</div></div><input class="form-input" style="width:200px" value="pdf,docx,doc,zip,rar,pptx,xlsx"></div>
+<div class="setting-row"><div><div class="setting-label">覆盖提交</div><div class="setting-desc">允许学生在截止前重新提交</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+</div>
+<div class="setting-card">
+<h3><i data-lucide="bell"></i> 通知设置</h3>
+<div class="setting-row"><div><div class="setting-label">截止提醒</div><div class="setting-desc">自动提醒学生作业即将到期</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+<div class="setting-row"><div><div class="setting-label">提醒时间</div><div class="setting-desc">截止前多久发送提醒</div></div><select class="form-select" style="width:120px"><option>24小时 + 3小时</option><option>48小时 + 12小时</option><option>仅截止当天</option></select></div>
+<div class="setting-row"><div><div class="setting-label">批改完成通知</div><div class="setting-desc">老师批改后通知学生</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+</div>
+<div class="setting-card">
+<h3><i data-lucide="lock"></i> 安全设置</h3>
+<div class="setting-row"><div><div class="setting-label">时间戳锁定</div><div class="setting-desc">提交后不可篡改时间记录</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+<div class="setting-row"><div><div class="setting-label">登录超时</div><div class="setting-desc">无操作自动登出时间</div></div><select class="form-select" style="width:100px"><option>30分钟</option><option selected>1小时</option><option>2小时</option></select></div>
+<div class="setting-row"><div><div class="setting-label">强制密码复杂度</div><div class="setting-desc">要求至少8位含大小写和数字</div></div><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+</div>
+<div class="setting-card">
+<h3><i data-lucide="hard-drive"></i> 存储设置</h3>
+<div class="setting-row"><div><div class="setting-label">存储方式</div></div><select class="form-select" style="width:120px"><option selected>本地存储</option><option>对象存储</option></select></div>
+<div class="setting-row"><div><div class="setting-label">自动备份</div><div class="setting-desc">每日凌晨3点自动备份</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+<div class="setting-row"><div><div class="setting-label">备份保留天数</div></div><select class="form-select" style="width:100px"><option>7天</option><option selected>30天</option><option>90天</option></select></div>
+</div>
+</div>
+</main></div>
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+</body></html>

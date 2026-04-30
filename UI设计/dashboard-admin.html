@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>管理控制台 · 管理控制台</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="assets/css/dashboard-admin.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">院校 A · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink)">超级管理员</span> 管理员</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link active" href="dashboard-admin.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="admin-schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校管理</a>
+<a class="side-link" href="admin-users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="admin-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="admin-stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="admin-settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="admin-logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom">
+<div class="user-info">
+<div class="user-avatar" style="background:var(--lavender)"><i data-lucide="user"></i></div>
+<div><div class="user-name">管理员 001</div><div class="user-role">平台管理</div></div>
+</div>
+<button class="logout-btn"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button>
+</div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="shield"></i> 系统总览</h1><div class="status-badge"><span class="pulse"></span> 系统运行正常</div></div>
+<div class="overview anim">
+<div class="ov-card"><div class="ov-label">入驻院校</div><div class="ov-val" style="color:var(--pink)">4</div><div class="ov-sub">1 所试运行中</div></div>
+<div class="ov-card"><div class="ov-label">教师用户</div><div class="ov-val" style="color:var(--yellow)">47</div><div class="ov-sub">本月新增 3</div></div>
+<div class="ov-card"><div class="ov-label">学生用户</div><div class="ov-val" style="color:var(--sky)">5,220</div><div class="ov-sub">活跃 3,840</div></div>
+<div class="ov-card"><div class="ov-label">教学班级</div><div class="ov-val" style="color:var(--lime)">186</div><div class="ov-sub">本学期在授</div></div>
+<div class="ov-card"><div class="ov-label">累计提交</div><div class="ov-val" style="color:var(--lavender)">12,680</div><div class="ov-sub">本周 +342</div></div>
+</div>
+<div class="two-col anim">
+<div class="panel"><div class="panel-head"><h2><i data-lucide="building-2"></i> 院校列表</h2><button>+ 添加院校</button></div>
+<div class="sc-item"><div class="sc-icon" style="background:rgba(108,182,255,.12)"><i data-lucide="building-2"></i></div><div class="sc-info"><div class="sc-name">院校 A</div><div class="sc-meta">18 位教师 · 14 门课程 · 2,100+ 学生</div></div><span class="sc-status sc-active">运行中</span></div>
+<div class="sc-item"><div class="sc-icon" style="background:rgba(240,201,41,.12)"><i data-lucide="landmark"></i></div><div class="sc-info"><div class="sc-name">院校 B</div><div class="sc-meta">13 位教师 · 11 门课程 · 1,600+ 学生</div></div><span class="sc-status sc-active">运行中</span></div>
+<div class="sc-item"><div class="sc-icon" style="background:rgba(126,201,74,.12)"><i data-lucide="building"></i></div><div class="sc-info"><div class="sc-name">院校 C</div><div class="sc-meta">9 位教师 · 8 门课程 · 980+ 学生</div></div><span class="sc-status sc-active">运行中</span></div>
+<div class="sc-item"><div class="sc-icon" style="background:rgba(180,165,245,.12)"><i data-lucide="graduation-cap"></i></div><div class="sc-info"><div class="sc-name">院校 D</div><div class="sc-meta">7 位教师 · 3 门课程 · 540+ 学生</div></div><span class="sc-status sc-pending">试运行</span></div>
+</div>
+<div class="panel"><div class="panel-head"><h2><i data-lucide="clipboard-list"></i> 最近动态</h2></div>
+<div class="fd-item"><span class="fd-dot" style="background:var(--lime)"></span><div><div class="fd-text"><strong>院校 D</strong> 完成了首批作业提交</div><div class="fd-time">2 小时前</div></div></div>
+<div class="fd-item"><span class="fd-dot" style="background:var(--sky)"></span><div><div class="fd-text">院校 A 新增教师账号 <strong>3 个</strong></div><div class="fd-time">昨天</div></div></div>
+<div class="fd-item"><span class="fd-dot" style="background:var(--yellow)"></span><div><div class="fd-text">系统自动备份完成，数据量 <strong>2.4 GB</strong></div><div class="fd-time">今天 03:00</div></div></div>
+<div class="fd-item"><span class="fd-dot" style="background:var(--pink)"></span><div><div class="fd-text">院校 B 存储空间使用率达到 <strong>78%</strong></div><div class="fd-time">3 天前</div></div></div>
+</div>
+</div>
+<div class="stats-grid anim">
+<div class="stat-panel"><h3><i data-lucide="trending-up"></i> 本月各院校提交量</h3><div class="bar-chart">
+<div class="bar" style="height:78%;background:var(--sky)"><span class="bar-val">142</span><span class="bar-label">院校A</span></div>
+<div class="bar" style="height:55%;background:var(--yellow)"><span class="bar-val">98</span><span class="bar-label">院校B</span></div>
+<div class="bar" style="height:38%;background:var(--lime)"><span class="bar-val">67</span><span class="bar-label">院校C</span></div>
+<div class="bar" style="height:20%;background:var(--lavender)"><span class="bar-val">35</span><span class="bar-label">院校D</span></div>
+</div></div>
+<div class="stat-panel"><h3><i data-lucide="bar-chart-3"></i> 用户角色分布</h3><div class="pie-row"><div class="pie-visual" style="background:conic-gradient(var(--sky) 0 8%, var(--yellow) 8% 100%)"></div><div class="pie-legend"><div><span style="background:var(--sky)"></span> 教师 · 47人 (8%)</div><div><span style="background:var(--yellow)"></span> 学生 · 5,220人 (92%)</div></div></div></div>
+</div>
+<div class="health-section anim"><h2 style="font-weight:700;font-size:.88rem;margin-bottom:10px"><i data-lucide="settings"></i> 系统状态</h2><div class="health-grid">
+<div class="health-card"><div class="health-icon"><i data-lucide="database"></i></div><div class="health-label">存储空间</div><div class="health-val" style="color:var(--lime)">62%</div><div class="health-bar"><div class="health-fill" style="width:62%;background:var(--lime)"></div></div></div>
+<div class="health-card"><div class="health-icon"><i data-lucide="zap"></i></div><div class="health-label">服务器负载</div><div class="health-val" style="color:var(--sky)">23%</div><div class="health-bar"><div class="health-fill" style="width:23%;background:var(--sky)"></div></div></div>
+<div class="health-card"><div class="health-icon"><i data-lucide="clock"></i></div><div class="health-label">运行时间</div><div class="health-val" style="color:var(--yellow)">99.9%</div><div class="health-bar"><div class="health-fill" style="width:99.9%;background:var(--yellow)"></div></div></div>
+</div></div>
+</main>
+</div>
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+</body>
+</html>

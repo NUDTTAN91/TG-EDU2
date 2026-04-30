@@ -1,0 +1,22 @@
+.course-detail{background:#fff;border:var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shadow-sm);margin-bottom:20px;position:relative;overflow:hidden}
+.course-detail::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:var(--sky)}
+.cd-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.cd-title{font-weight:900;font-size:1.3rem}
+.cd-meta{font-size:0.82rem;color:#888;margin-top:4px}
+.cd-stats{display:flex;gap:12px;margin-bottom:16px}
+.cd-stat{padding:6px 14px;background:#f5f3ed;border-radius:8px;font-size:0.78rem;font-weight:600;color:#666}
+.cd-actions{display:flex;gap:8px;flex-wrap:wrap}
+.class-section{margin-top:20px}
+.class-section h3{font-weight:700;font-size:0.95rem;margin-bottom:12px}
+.class-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:var(--border);border-radius:12px;box-shadow:var(--shadow-sm);margin-bottom:8px;transition:all 0.15s;cursor:pointer}
+.class-card:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow)}
+.class-info{flex:1}
+.class-name{font-weight:700;font-size:0.88rem}
+.class-meta{font-size:0.72rem;color:#999;margin-top:2px}
+
+/* ===== Dark Mode Overrides ===== */
+[data-theme="dark"] .course-detail{background:var(--card)}
+[data-theme="dark"] .cd-meta{color:var(--text-light)}
+[data-theme="dark"] .cd-stat{background:var(--bg-subtle);color:var(--text-muted)}
+[data-theme="dark"] .class-card{background:var(--card)}
+[data-theme="dark"] .class-meta{color:var(--text-light)}

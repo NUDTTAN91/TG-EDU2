@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>教师控制台 · commit()</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="assets/css/dashboard-teacher.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">院校 A · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--sky)">教师</span> 教师工作台</div>
+<div class="nav-section">教学管理</div>
+<a class="side-link active" href="dashboard-teacher.html" style="background:var(--yellow)"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="teacher-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的课程</a>
+<a class="side-link" href="teacher-assign.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 布置作业</a>
+<a class="side-link" href="teacher-grade.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业 <span class="badge">23</span></a>
+<a class="side-link" href="teacher-scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">其他</div>
+<a class="side-link" href="teacher-messages.html"><span class="ico"><i data-lucide="message-circle"></i></span> 学生留言 <span class="badge">5</span></a>
+<a class="side-link" href="teacher-settings.html"><span class="ico"><i data-lucide="settings"></i></span> 设置</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--sky)"><i data-lucide="user"></i></div><div><div class="user-name">教师 001</div><div class="user-role">计算机科学与技术</div></div></div><button class="logout-btn" onclick="location.href='login.html'"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1>👋 下午好，老师</h1><button class="notif-btn"><i data-lucide="bell"></i><span class="red-dot"></span></button></div>
+
+<div class="overview">
+<div class="ov-card"><div class="ov-label">待批改</div><div class="ov-val" style="color:var(--pink)">23</div><div class="ov-sub">来自 3 个班级</div></div>
+<div class="ov-card"><div class="ov-label">授课班级</div><div class="ov-val" style="color:var(--sky)">4</div><div class="ov-sub">本学期在授</div></div>
+<div class="ov-card"><div class="ov-label">学生总数</div><div class="ov-val" style="color:var(--yellow)">186</div><div class="ov-sub">跨 4 门课程</div></div>
+<div class="ov-card"><div class="ov-label">本周提交率</div><div class="ov-val" style="color:var(--lime)">91%</div><div class="ov-sub">较上周 +3%</div></div>
+</div>
+
+<div class="qa"><div><h2>有 23 份作业等你批改 <i data-lucide="edit-3"></i></h2><p>最快的已经等了 2 天，学生开始着急了</p></div><button class="qa-btn">去批改 →</button></div>
+
+<div class="two-col">
+<div class="panel"><div class="panel-head"><h2><i data-lucide="file-check"></i> 待批改</h2><button>全部标记已阅</button></div>
+<div class="review-list">
+<div class="rv-item"><div class="rv-av" style="background:rgba(240,201,41,.12)">数</div><div class="rv-info"><div class="rv-name">数据结构 · 实验报告 4</div><div class="rv-meta">2024级3班 · 最新提交 2 小时前</div></div><span class="rv-count">12 份</span></div>
+<div class="rv-item"><div class="rv-av" style="background:rgba(244,114,138,.12)">高</div><div class="rv-info"><div class="rv-name">高等数学 A · 第 9 章习题</div><div class="rv-meta">2025级1班 · 截止后收集完毕</div></div><span class="rv-count soon">8 份</span></div>
+<div class="rv-item"><div class="rv-av" style="background:rgba(108,182,255,.12)">算</div><div class="rv-info"><div class="rv-name">算法设计 · 编程作业 3</div><div class="rv-meta">2024级1/2班 · 进行中</div></div><span class="rv-count soon">3 份</span></div>
+</div>
+</div>
+<div class="panel"><div class="panel-head"><h2><i data-lucide="book-open"></i> 我的班级</h2></div>
+<div class="class-list">
+<div class="cl-item"><span class="cl-dot" style="background:var(--lime)"></span><div class="cl-info"><div class="cl-name">2024级 计算机3班</div><div class="cl-meta">数据结构与算法</div></div><div class="cl-stat">48人 · 提交率 94%</div></div>
+<div class="cl-item"><span class="cl-dot" style="background:var(--yellow)"></span><div class="cl-info"><div class="cl-name">2025级 理工1班</div><div class="cl-meta">高等数学 A</div></div><div class="cl-stat">52人 · 提交率 88%</div></div>
+<div class="cl-item"><span class="cl-dot" style="background:var(--sky)"></span><div class="cl-info"><div class="cl-name">2024级 计科1/2班</div><div class="cl-meta">算法设计</div></div><div class="cl-stat">46人 · 提交率 91%</div></div>
+<div class="cl-item"><span class="cl-dot" style="background:var(--lavender)"></span><div class="cl-info"><div class="cl-name">2023级 全年级</div><div class="cl-meta">学术英语写作</div></div><div class="cl-stat">40人 · 提交率 95%</div></div>
+</div>
+</div>
+</div>
+
+<div class="courses-section"><div class="courses-head"><h2>我的课程</h2></div><div class="course-grid">
+<div class="c-card"><div class="cc-emoji"><i data-lucide="monitor"></i></div><div class="cc-name">数据结构与算法</div><div class="cc-meta">4 个班级 · 186 名学生</div><div class="cc-stats"><span class="cc-stat">待批改 23</span><span class="cc-stat">已布置 8</span></div></div>
+<div class="c-card"><div class="cc-emoji"><i data-lucide="triangle"></i></div><div class="cc-name">高等数学 A</div><div class="cc-meta">1 个班级 · 52 名学生</div><div class="cc-stats"><span class="cc-stat">待批改 8</span><span class="cc-stat">已布置 9</span></div></div>
+<div class="c-card"><div class="cc-emoji"><i data-lucide="calculator"></i></div><div class="cc-name">算法设计</div><div class="cc-meta">1 个班级 · 46 名学生</div><div class="cc-stats"><span class="cc-stat">待批改 3</span><span class="cc-stat">已布置 5</span></div></div>
+</div></div>
+</main>
+</div>
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/dashboard-teacher.js"></script>
+</body>
+</html>

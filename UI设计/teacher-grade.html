@@ -1,0 +1,195 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>批改作业 · 教师控制台</title><link rel="icon" type="image/svg+xml" href="favicon.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/shared.css">
+<link rel="stylesheet" href="assets/css/teacher-grade.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">多院校 · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--sky)">教师</span> 教师工作台</div>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="dashboard-teacher.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="teacher-courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的课程</a>
+<a class="side-link" href="teacher-assign.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 布置作业</a>
+<a class="side-link active" href="teacher-grade.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业 <span class="badge">31</span></a>
+<a class="side-link" href="teacher-scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">其他</div>
+<a class="side-link" href="teacher-messages.html"><span class="ico"><i data-lucide="message-circle"></i></span> 学生留言 <span class="badge">5</span></a>
+<a class="side-link" href="teacher-settings.html"><span class="ico"><i data-lucide="settings"></i></span> 设置</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--lavender)"><i data-lucide="user"></i></div><div><div class="user-name">教师 001</div><div class="user-role">院校 A · 院校 B</div></div></div><button class="logout-btn" onclick="location.href='login.html'"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="check-circle"></i> 批改作业</h1></div>
+
+<!-- Filter bar: school → course → assignment -->
+<div class="filter-bar anim">
+  <label>院校</label>
+  <select class="filter-select" id="schoolFilter" onchange="updateFilterStats()">
+    <option value="all">全部院校</option>
+    <option value="a">院校 A</option>
+    <option value="b">院校 B</option>
+  </select>
+  <span class="filter-sep">›</span>
+  <label>课程</label>
+  <select class="filter-select" id="courseFilter" onchange="updateFilterStats()">
+    <option>数据结构与算法</option>
+    <option>高等数学 A</option>
+    <option>算法设计</option>
+    <option>学术英语写作</option>
+  </select>
+  <span class="filter-sep">›</span>
+  <label>作业</label>
+  <select class="filter-select" id="assignFilter">
+    <option>实验报告 4</option>
+    <option>第 9 章习题</option>
+    <option>编程作业 3</option>
+    <option>期中论文</option>
+  </select>
+  <div class="filter-stats">
+    <div class="filter-stat"><span class="dot" style="background:var(--pink)"></span> 待批改 <strong>23</strong></div>
+    <div class="filter-stat"><span class="dot" style="background:var(--lime)"></span> 已批改 <strong>25</strong></div>
+    <div class="filter-stat">共 <strong>48</strong> 份</div>
+  </div>
+</div>
+
+<div class="grade-layout anim">
+  <!-- Student list -->
+  <div class="student-list">
+    <div class="student-head">
+      <div class="student-head-top">
+        <h3>提交列表</h3>
+        <div class="progress-mini"><strong>25</strong>/48 已批改</div>
+      </div>
+      <input class="student-search" placeholder="搜索学生…">
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterStudents(this,'all')">全部</button>
+        <button class="filter-tab" onclick="filterStudents(this,'pending')">待批改</button>
+        <button class="filter-tab" onclick="filterStudents(this,'graded')">已批改</button>
+      </div>
+    </div>
+    <div id="studentItems">
+      <div class="s-item active" data-status="pending">
+        <div class="s-avatar" style="background:var(--sky)">S1</div>
+        <div class="s-info">
+          <div class="s-name">学生 001</div>
+          <div class="s-meta"><span class="s-school">院校A</span>2024级 计算机3班 · 2小时前 · pdf</div>
+        </div>
+        <div class="s-right"><span class="s-status" style="background:var(--yellow)">待批</span></div>
+      </div>
+      <div class="s-item" data-status="pending">
+        <div class="s-avatar" style="background:var(--lime)">S2</div>
+        <div class="s-info">
+          <div class="s-name">学生 002</div>
+          <div class="s-meta"><span class="s-school">院校A</span>2024级 计算机1班 · 3小时前 · pdf</div>
+        </div>
+        <div class="s-right"><span class="s-status" style="background:var(--yellow)">待批</span></div>
+      </div>
+      <div class="s-item" data-status="pending">
+        <div class="s-avatar" style="background:var(--yellow)">S3</div>
+        <div class="s-info">
+          <div class="s-name">学生 003</div>
+          <div class="s-meta"><span class="s-school">院校B</span>2024级 软件工程1班 · 5小时前 · zip</div>
+        </div>
+        <div class="s-right"><span class="s-status" style="background:var(--yellow)">待批</span></div>
+      </div>
+      <div class="s-item" data-status="graded">
+        <div class="s-avatar" style="background:var(--lavender)">S4</div>
+        <div class="s-info">
+          <div class="s-name">学生 004</div>
+          <div class="s-meta"><span class="s-school">院校A</span>2024级 计算机3班 · 昨天 · pdf</div>
+        </div>
+        <div class="s-right"><span class="s-score">86</span><span class="s-status" style="background:var(--lime)">已批</span></div>
+      </div>
+      <div class="s-item" data-status="graded">
+        <div class="s-avatar" style="background:var(--pink);color:#fff">S5</div>
+        <div class="s-info">
+          <div class="s-name">学生 005</div>
+          <div class="s-meta"><span class="s-school">院校A</span>2024级 计算机2班 · 昨天 · pdf</div>
+        </div>
+        <div class="s-right"><span class="s-score">92</span><span class="s-status" style="background:var(--lime)">已批</span></div>
+      </div>
+      <div class="s-item" data-status="pending">
+        <div class="s-avatar" style="background:var(--sky)">S6</div>
+        <div class="s-info">
+          <div class="s-name">学生 006</div>
+          <div class="s-meta"><span class="s-school">院校B</span>2024级 软件工程1班 · 昨天 · docx</div>
+        </div>
+        <div class="s-right"><span class="s-status" style="background:var(--yellow)">待批</span></div>
+      </div>
+      <div class="s-item" data-status="graded">
+        <div class="s-avatar" style="background:var(--lime)">S7</div>
+        <div class="s-info">
+          <div class="s-name">学生 007</div>
+          <div class="s-meta"><span class="s-school">院校A</span>2024级 计算机1班 · 2天前 · pdf</div>
+        </div>
+        <div class="s-right"><span class="s-score">78</span><span class="s-status" style="background:var(--lime)">已批</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grade area -->
+  <div class="grade-area">
+    <div class="grade-head">
+      <div class="grade-student">
+        <div class="grade-student-avatar" style="background:var(--sky)">S1</div>
+        <div>
+          <div class="grade-student-name">学生 001</div>
+          <div class="grade-student-meta">
+            <span class="tag-sm" style="background:var(--sky)">院校 A</span>
+            <span class="tag-sm" style="background:var(--yellow)">2024级 计算机3班</span>
+            <span style="color:#bbb">提交于 2 小时前 · experiment_report_4.pdf</span>
+          </div>
+        </div>
+      </div>
+      <div class="grade-nav">
+        <button>← 上一个</button>
+        <button>下一个 →</button>
+      </div>
+    </div>
+
+    <div class="file-preview" onclick="this.style.borderColor='var(--ink)'">
+      <div class="file-icon"><i data-lucide="file-text"></i></div>
+      <div class="file-name">experiment_report_4.pdf</div>
+      <div class="file-meta">1.2 MB · 提交于 2026-06-06 12:30 · 点击打开预览</div>
+    </div>
+
+    <div class="score-section">
+      <div class="score-box">
+        <input type="number" placeholder="—" min="0" max="100" id="scoreInput">
+        <div class="score-max">/ 100 分</div>
+        <div class="quick-scores">
+          <button class="quick-score" onclick="setScore(100)">100</button>
+          <button class="quick-score" onclick="setScore(90)">90</button>
+          <button class="quick-score" onclick="setScore(80)">80</button>
+          <button class="quick-score" onclick="setScore(70)">70</button>
+          <button class="quick-score" onclick="setScore(60)">60</button>
+        </div>
+      </div>
+      <div class="comment-box">
+        <label class="form-label">评语</label>
+        <textarea class="form-textarea" id="commentInput" placeholder="给学生的反馈…" style="min-height:80px"></textarea>
+        <div class="comment-quick">
+          <button class="comment-chip" onclick="addComment('做得很好，继续保持！')"><i data-lucide="thumbs-up"></i> 做得好</button>
+          <button class="comment-chip" onclick="addComment('格式不规范，请注意排版。')"><i data-lucide="ruler"></i> 格式问题</button>
+          <button class="comment-chip" onclick="addComment('部分题目解答不完整，请补充。')"><i data-lucide="pencil"></i> 不够完整</button>
+          <button class="comment-chip" onclick="addComment('思路清晰，代码实现良好。')"><i data-lucide="code-2"></i> 代码良好</button>
+          <button class="comment-chip" onclick="addComment('迟交了，下次注意截止时间。')"><i data-lucide="clock"></i> 迟交提醒</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grade-actions">
+      <button class="btn btn-primary" id="submitGrade" onclick="submitGrade()">提交批改 →</button>
+      <button class="btn btn-secondary" onclick="skipStudent()">跳过</button>
+      <span class="spacer"></span>
+      <span class="hint">快捷键：Ctrl+Enter 提交</span>
+    </div>
+  </div>
+</div>
+</main></div>
+
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/teacher-grade.js"></script>
+</body></html>

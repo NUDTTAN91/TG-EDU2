@@ -1,0 +1,18 @@
+.log-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:6px 14px;font-size:0.78rem;font-weight:600;border:2px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.filter-btn.active{border-color:var(--ink);background:var(--yellow)}
+.log-item{display:flex;gap:14px;padding:16px 20px;border-bottom:1.5px solid #f0ede6}
+.log-item:last-child{border-bottom:none}
+.log-time{font-family:'Space Mono',monospace;font-size:0.75rem;color:#aaa;min-width:130px;padding-top:2px}
+.log-icon{font-size:1.1rem;padding-top:1px}
+.log-body{flex:1}
+.log-text{font-size:0.85rem;line-height:1.5}
+.log-text strong{font-weight:700}
+.log-meta{font-size:0.72rem;color:#999;margin-top:3px}
+
+/* ===== Dark Mode Overrides ===== */
+[data-theme="dark"] .filter-btn{background:var(--card);border-color:var(--border-light);color:var(--text-muted)}
+[data-theme="dark"] .filter-btn.active{border-color:var(--ink);background:var(--yellow);color:#1d1d1d}
+[data-theme="dark"] .log-item{border-bottom-color:var(--border-lighter)}
+[data-theme="dark"] .log-time{color:var(--text-lighter)}
+[data-theme="dark"] .log-meta{color:var(--text-light)}
