@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TG-EDU2</title>
+<link rel="icon" type="image/svg+xml" href="/TeamIco.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/dashboard-student.css">
+<style>
+.courses-section{margin-top:0;padding-top:8px}
+.courses-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.courses-head h2{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:6px}
+.courses-head a{font-size:.7rem;color:#aaa}
+.courses-head a:hover{color:var(--ink)}
+.course-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:1000px){.course-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.course-grid{grid-template-columns:1fr}}
+.c-card{background:var(--card);border:var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm);transition:all .2s;cursor:pointer;position:relative;overflow:hidden}
+.c-card:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow)}
+.c-card::before{content:'';position:absolute;top:0;left:0;right:0;height:5px}
+.c-card:nth-child(1)::before{background:var(--yellow)}.c-card:nth-child(2)::before{background:var(--pink)}.c-card:nth-child(3)::before{background:var(--sky)}.c-card:nth-child(4)::before{background:var(--lime)}.c-card:nth-child(5)::before{background:var(--lavender)}.c-card:nth-child(6)::before{background:#e07a5f}
+.c-card:nth-child(1) .cc-emoji{background:var(--yellow)}.c-card:nth-child(2) .cc-emoji{background:var(--pink);color:#fff}.c-card:nth-child(3) .cc-emoji{background:var(--sky)}.c-card:nth-child(4) .cc-emoji{background:var(--lime)}.c-card:nth-child(5) .cc-emoji{background:var(--lavender)}.c-card:nth-child(6) .cc-emoji{background:#e07a5f;color:#fff}
+.cc-emoji{width:38px;height:38px;border:2px solid var(--ink);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:10px;box-shadow:2px 2px 0 var(--ink)}
+.cc-name{font-weight:700;font-size:.82rem;margin-bottom:3px}
+.cc-desc{font-size:.64rem;color:#999;margin-bottom:6px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cc-stats{display:flex;gap:8px;margin-top:8px}
+.cc-stat{font-size:.64rem;padding:2px 8px;background:var(--bg);border-radius:5px;color:#888;font-weight:500}
+.c-card.expanded{border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom:none;margin-bottom:0}
+.c-assignments{display:none;border:var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);background:var(--card);box-shadow:var(--shadow-sm);margin-bottom:10px;overflow:hidden}
+.c-assignments.open{display:block}
+.c-assignments .as-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1.5px solid #eee;transition:background .12s}
+.c-assignments .as-row:last-child{border-bottom:none}
+.c-assignments .as-row:hover{background:var(--bg)}
+.c-assignments-empty{padding:24px;text-align:center;color:#aaa;font-size:.82rem}
+[data-theme="dark"] .c-card{background:var(--card)}
+[data-theme="dark"] .cc-desc{color:var(--text-light)}
+[data-theme="dark"] .cc-stat{background:var(--bg-subtle);color:var(--text-light)}
+[data-theme="dark"] .c-assignments{background:var(--card);border-color:var(--border-light)}
+[data-theme="dark"] .c-assignments .as-row{border-bottom-color:var(--border-lighter)}
+[data-theme="dark"] .c-assignments .as-row:hover{background:var(--bg-subtle)}
+[data-theme="dark"] .c-assignments-empty{color:var(--text-lighter)}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交
+  </div>
+  <div class="sidebar-school" id="sidebar-school" style="padding-bottom:16px;border-bottom:2px solid #eee;margin-bottom:16px"></div>
+
+  <a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 作业面板</a>
+  <a class="side-link active" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的作业</a>
+  <a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="upload"></i></span> 提交记录</a>
+  <a class="side-link" href="grades.html"><span class="ico"><i data-lucide="trophy"></i></span> 成绩查看</a>
+  <a class="side-link" href="#" onclick="alert('暂未开放');return false;"><span class="ico"><i data-lucide="message-circle"></i></span> 消息通知</a>
+
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" style="background:var(--yellow)"><i data-lucide="graduation-cap"></i></div>
+      <div>
+        <div class="user-name" id="sidebar-username"></div>
+        <div class="user-role" id="sidebar-role"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button>
+  </div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1 id="greeting-text"><i data-lucide="book-open"></i> 我的作业</h1></div>
+
+<!-- 视图切换按钮 -->
+<div class="view-toggle">
+  <button class="view-btn active" data-view="grid" title="宫格视图" onclick="switchView('grid')">
+    <i data-lucide="grid-3x3"></i>
+  </button>
+  <button class="view-btn" data-view="list" title="列表视图" onclick="switchView('list')">
+    <i data-lucide="list"></i>
+  </button>
+</div>
+
+<!-- 作业通知卡片列表（宫格视图） -->
+<div id="assignment-notifications" class="notification-grid">
+<!-- JS 动态生成 assignment-card -->
+</div>
+
+<!-- 作业列表视图（标准表格） -->
+<div id="assignment-table-view" class="panel" style="display:none">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>作业标题</th>
+        <th>所属课程</th>
+        <th>满分</th>
+        <th>截止时间</th>
+        <th>状态</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="assignment-table-body"></tbody>
+  </table>
+</div>
+
+<!-- 上传提交区域（默认隐藏，点击作业通知后显示） -->
+<section class="card" id="upload-section" style="display:none">
+<div class="submit-tabs"><button class="submit-tab active" data-tab="upload"><i data-lucide="upload"></i> 上传提交</button><button class="submit-tab" data-tab="editor"><i data-lucide="keyboard"></i> 在线编辑</button></div>
+<div class="submit-body">
+<div id="tab-upload" class="tab-panel">
+<div class="form-group" style="margin-bottom:12px">
+  <label class="form-label" style="font-size:.75rem;margin-bottom:4px">选择要提交的作业</label>
+  <select class="form-select" id="submit-assignment-select" style="width:100%">
+    <option value="">请先选择作业</option>
+  </select>
+</div>
+<label class="upload-zone"><div class="upload-zone-icon"><i data-lucide="upload"></i></div><p class="upload-zone-title">点击或拖拽文件到此处上传</p><p class="upload-zone-hint">支持 .cpp / .c / .java / .py / .zip · 单文件 ≤ 10MB</p><input type="file"></label></div>
+<div id="tab-editor" class="tab-panel" style="display:none"><div class="code-block"><div class="code-row"><span class="code-num">1</span><span class="code-text"><span class="code-kw">#include</span> <span class="code-str">&lt;vector&gt;</span></span></div><div class="code-row"><span class="code-num">2</span><span class="code-text"><span class="code-kw">using namespace</span> std;</span></div><div class="code-row"><span class="code-num">4</span><span class="code-text"><span class="code-kw">struct</span> <span class="code-type">RBNode</span> {</span></div><div class="code-row"><span class="code-num">5</span><span class="code-text">  <span class="code-kw">int</span> key;</span></div><div class="code-row"><span class="code-num">6</span><span class="code-text">  <span class="code-kw">bool</span> red = <span class="code-str">true</span>;</span></div><div class="code-row"><span class="code-num">7</span><span class="code-text">  RBNode *l, *r, *p;</span></div><div class="code-row"><span class="code-num">8</span><span class="code-text">};</span></div><div class="code-row"><span class="code-num">10</span><span class="code-text"><span class="code-cmt">// TODO: 左旋后修复颜色</span></span></div><div class="code-row"><span class="code-num">11</span><span class="code-text"><span class="code-kw">void</span> <span class="code-type">insertFixup</span>(RBNode* z) {</span></div></div></div>
+<div class="file-chip" style="display:none"><svg class="file-chip-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><div><div class="file-chip-name">rbtree_insert.cpp</div><div class="file-chip-meta">4.2 KB · 已暂存，等待提交</div></div><span class="file-chip-tag">Ready</span></div>
+<div class="btn-row"><button class="btn btn-ghost"><i data-lucide="play"></i> 本地自测</button><button class="btn btn-primary"><i data-lucide="send"></i> 提交评测</button></div>
+</div>
+</section>
+
+</main>
+<div class="status-bar">Copyright © 2026 commit() · All Rights Reserved.</div>
+</div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="courses.js"></script>
+</body>
+</html>

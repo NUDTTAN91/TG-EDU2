@@ -1,0 +1,91 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2 · 成绩管理</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/teacher-scores.css">
+</head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校及班级管理</a>
+<a class="side-link" href="users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="assignments.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 作业管理</a>
+<a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业</a>
+<a class="side-link active" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name" id="sidebar-username">管理员</div><div class="user-role" id="sidebar-role">超级管理员</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="clipboard-list"></i> 成绩管理</h1></div>
+
+<div class="controls anim">
+  <div class="controls-left">
+    <select class="form-select" style="width:160px" id="schoolSel"><option value="">全部院校</option></select>
+    <select class="form-select" style="width:200px" id="courseSel"><option value="">全部课程</option></select>
+    <select class="form-select" style="width:160px" id="classSel"><option value="">全部班级</option></select>
+  </div>
+  <div class="controls-right">
+    <div class="view-toggle">
+      <button class="view-btn active" onclick="switchView('table',this)"><i data-lucide="bar-chart-3"></i> 表格</button>
+      <button class="view-btn" onclick="switchView('card',this)"><i data-lucide="clipboard-list"></i> 卡片</button>
+    </div>
+    <button class="btn btn-secondary" onclick="exportExcel()">导出 Excel</button>
+  </div>
+</div>
+
+<div class="summary anim">
+  <div class="su-box"><div class="su-val" id="sumAvg">—</div><div class="su-label">班级平均分</div></div>
+  <div class="su-box"><div class="su-val" id="sumMax">—</div><div class="su-label">最高分</div></div>
+  <div class="su-box"><div class="su-val" id="sumMin">—</div><div class="su-label">最低分</div></div>
+  <div class="su-box"><div class="su-val" id="sumPass">—</div><div class="su-label">及格率</div></div>
+</div>
+
+<!-- TABLE VIEW -->
+<div class="table-view active" id="tableView">
+<div class="table-wrap anim">
+  <div class="table-scroll">
+    <table class="score-table" id="scoreTable">
+      <thead><tr>
+        <th class="student-col">学生</th>
+        <th class="total-col">总分</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="table-footer">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot l-normal">88</span> 正常</div>
+      <div class="legend-item"><span class="legend-dot l-late">78</span> 迟交</div>
+      <div class="legend-item"><span class="legend-dot l-miss">缺</span> 缺交</div>
+      <div class="legend-item"><span class="legend-dot l-makeup">90</span> 补交</div>
+      <div class="legend-item" style="color:#ccc">—</div>
+      <div class="legend-item" style="color:#ccc">未布置</div>
+    </div>
+    <span><i data-lucide="lightbulb"></i> 鼠标悬停列标题可查看完整作业名称</span>
+  </div>
+</div>
+</div>
+
+<!-- CARD VIEW -->
+<div class="card-view" id="cardView">
+<div class="assign-cards anim" id="assignCards"></div>
+</div>
+
+</main></div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="scores.js"></script>
+</body></html>

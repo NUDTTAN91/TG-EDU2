@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+test.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+LICENSE
+
+# Scripts (not needed in container)
+scripts/
+
+# Data (will be mounted as volume)
+data/
+test-uploads/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Tests (optional, can be included for testing)
+# tests/

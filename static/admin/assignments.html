@@ -1,0 +1,259 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2 · 作业管理</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/teacher-assign.css">
+<style>
+/* Existing assignments list section */
+.assign-list-section{margin-top:32px}
+.assign-list-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.assign-list-header h2{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.assign-list-header h2 i{width:18px;height:18px}
+.assign-list-actions{display:flex;gap:10px;align-items:center}
+.assign-list-actions .form-select{width:160px}
+.empty-msg{text-align:center;padding:40px;color:#999;font-size:.88rem}
+.publish-status{display:none;position:fixed;bottom:24px;right:24px;padding:12px 20px;background:var(--lime);border:2px solid var(--ink);border-radius:10px;font-size:.85rem;font-weight:600;box-shadow:var(--shadow-sm);z-index:9999;align-items:center;gap:8px}
+.publish-status.show{display:flex}
+.publish-status.error{background:#fde8e8;border-color:#e74c3c;color:#c0392b}
+/* Edit modal */
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal-box{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:28px 32px;min-width:420px;max-width:92vw;max-height:88vh;overflow-y:auto;box-shadow:6px 6px 0 var(--ink)}
+[data-theme="dark"] .modal-box{background:#1e1e1e;box-shadow:6px 6px 0 #555;border-color:#555}
+.modal-box h3{margin:0 0 20px;font-size:1.1rem}
+.modal-box label{display:block;margin-bottom:4px;font-size:.85rem;font-weight:600;color:#555}
+[data-theme="dark"] .modal-box label{color:#ccc}
+.modal-box .form-input,.modal-box .form-select,.modal-box .form-textarea{width:100%;margin-bottom:14px}
+.modal-error{display:none;color:#e74c3c;font-size:.85rem;margin-bottom:12px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+/* Multi-select dropdown */
+.multi-select{position:relative}
+.multi-select-trigger{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:2px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;font-size:.88rem;min-height:42px;gap:8px}
+.multi-select-trigger:hover{border-color:var(--sky,#7ec8ff)}
+.multi-select-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333}
+.multi-select-arrow{font-size:.8rem;color:#999;flex-shrink:0}
+.multi-select-dropdown{position:absolute;top:100%;left:0;right:0;z-index:9999;background:#fff;border:2px solid #ddd;border-radius:10px;margin-top:4px;max-height:240px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.form-section{overflow:visible !important}
+.multi-select-option{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;font-size:.85rem}
+.multi-select-option:hover{background:#f5f5f5}
+.multi-select-option input[type="checkbox"]{accent-color:var(--sky,#7ec8ff)}
+[data-theme="dark"] .multi-select-trigger{background:var(--card,#252525);border-color:#555}
+[data-theme="dark"] .multi-select-label{color:#ddd}
+[data-theme="dark"] .multi-select-dropdown{background:var(--card,#252525);border-color:#555}
+[data-theme="dark"] .multi-select-option:hover{background:#333}
+.tab-group{display:flex;background:var(--bg-subtle,#f5f3ed);border-radius:10px;padding:3px;border:2px solid var(--ink,#1d1d1d)}
+.tab-btn{padding:6px 18px;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted,#666);transition:all .15s;font-family:inherit}
+.tab-btn.active{background:var(--yellow,#ffe156);color:var(--ink,#1d1d1d);box-shadow:2px 2px 0 var(--ink,#1d1d1d)}
+.tab-btn:hover:not(.active){color:var(--ink,#1d1d1d);background:var(--bg-subtle2,#f0ede6)}
+[data-theme="dark"] .tab-group{background:var(--bg-subtle,#2a2a2a);border-color:#555}
+[data-theme="dark"] .tab-btn{color:var(--text-light,#888)}
+[data-theme="dark"] .tab-btn.active{background:var(--yellow,#ffe156);color:var(--ink,#e8e8e8);box-shadow:2px 2px 0 rgba(0,0,0,.3)}
+</style>
+</head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校及班级管理</a>
+<a class="side-link" href="users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">教学管理</div>
+<a class="side-link active" href="assignments.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 作业管理</a>
+<a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业</a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name" id="sidebar-username">管理员</div><div class="user-role" id="sidebar-role">超级管理员</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar" style="justify-content:space-between">
+  <h1><i data-lucide="pen-tool"></i> 作业管理</h1>
+  <div class="tab-group">
+    <button class="tab-btn active" onclick="switchAssignTab('list')">作业列表</button>
+    <button class="tab-btn" onclick="switchAssignTab('create')">布置作业</button>
+  </div>
+  <div class="action-bar" id="publishActionBar" style="display:none">
+    <button class="btn btn-primary" id="publishBtn" onclick="handlePublish()">发布作业 →</button>
+  </div>
+  <div style="width:120px" id="topbarRightSpacer"></div>
+</div>
+
+<div id="createPanel" style="display:none">
+<div class="assign-layout">
+  <!-- Left: Form -->
+  <div class="form-panel anim">
+
+    <!-- Section 1: Basic Info -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">1</span><span class="section-title">基本信息</span></div>
+      <div class="form-group">
+        <label class="form-label">作业类型</label>
+        <div class="type-cards">
+          <div class="type-card selected" onclick="selectType(this,'homework')"><span class="type-icon"><i data-lucide="file-text"></i></span>课后作业</div>
+          <div class="type-card" onclick="selectType(this,'experiment')"><span class="type-icon"><i data-lucide="flask-conical"></i></span>实验报告</div>
+          <div class="type-card" onclick="selectType(this,'essay')"><span class="type-icon"><i data-lucide="pen-tool"></i></span>论文</div>
+          <div class="type-card" onclick="selectType(this,'project')"><span class="type-icon"><i data-lucide="package"></i></span>项目</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">选择学校</label>
+        <select class="form-select" id="schoolSelect" onchange="onSchoolChange()">
+          <option value="">请选择学校</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">选择班级</label>
+        <div class="class-chips" id="classChips">
+          <span style="color:#999;font-size:.85rem;padding:8px">请先选择学校</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">选择课程</label>
+        <select class="form-select" id="courseSelect" onchange="updatePreview()" disabled>
+          <option value="">请先选择班级</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">作业标题</label>
+        <input class="form-input" id="titleInput" placeholder="例如：实验报告 5 - 二叉搜索树" oninput="updatePreview()">
+      </div>
+    </div>
+
+    <!-- Section 2: Requirements -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">2</span><span class="section-title">作业要求</span></div>
+      <div class="form-group">
+        <label class="form-label">描述 / 要求</label>
+        <textarea class="form-textarea" id="descInput" placeholder="描述作业要求、注意事项、参考资料等…" style="min-height:120px" oninput="updatePreview()"></textarea>
+        <div class="form-hint">支持简单文本，学生会看到这段描述</div>
+      </div>
+      <div class="row3">
+        <div class="form-group">
+          <label class="form-label">满分分值</label>
+          <input class="form-input" type="number" id="scoreInput" placeholder="100" value="100" oninput="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">截止时间</label>
+          <input class="form-input" type="datetime-local" id="deadlineInput" onchange="updatePreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">文件格式</label>
+          <div class="multi-select" id="formatSelect">
+            <div class="multi-select-trigger" onclick="toggleFormatDropdown()">
+              <span class="multi-select-label" id="formatLabel">请选择文件格式</span>
+              <span class="multi-select-arrow">▾</span>
+            </div>
+            <div class="multi-select-dropdown" id="formatDropdown" style="display:none">
+              <label class="multi-select-option"><input type="checkbox" value=".pdf" onchange="updateFormatLabel()"> PDF (.pdf)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".docx" onchange="updateFormatLabel()"> Word (.docx)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".doc" onchange="updateFormatLabel()"> Word (.doc)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".zip" onchange="updateFormatLabel()"> 压缩包 (.zip)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".rar" onchange="updateFormatLabel()"> 压缩包 (.rar)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".pptx" onchange="updateFormatLabel()"> PPT (.pptx)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".xlsx" onchange="updateFormatLabel()"> Excel (.xlsx)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".txt" onchange="updateFormatLabel()"> 文本 (.txt)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".cpp" onchange="updateFormatLabel()"> C++ (.cpp)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".c" onchange="updateFormatLabel()"> C (.c)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".java" onchange="updateFormatLabel()"> Java (.java)</label>
+              <label class="multi-select-option"><input type="checkbox" value=".py" onchange="updateFormatLabel()"> Python (.py)</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Options -->
+    <div class="form-section">
+      <div class="section-head"><span class="section-num">3</span><span class="section-title">高级选项</span></div>
+      <div class="toggle-rows">
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">允许截止后补交</div><div class="toggle-desc">截止后仍可提交，但会标记为迟交</div></div>
+          <div class="toggle" onclick="this.classList.toggle('on');updatePreview()"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">允许覆盖提交</div><div class="toggle-desc">学生可以在截止前重新上传文件</div></div>
+          <div class="toggle on" onclick="this.classList.toggle('on');updatePreview()"></div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info"><div class="toggle-label">提交后显示参考答案</div><div class="toggle-desc">学生提交后自动展示参考答案</div></div>
+          <div class="toggle" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Preview -->
+  <div class="preview-panel anim">
+    <div style="font-size:0.78rem;font-weight:600;color:#999;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+      <i data-lucide="eye"></i> 学生视角预览
+      <span class="handwriting-note" style="font-size:0.85rem">← 学生看到的就是这样</span>
+    </div>
+    <div class="preview-card">
+      <div class="preview-head">
+        <h3><i data-lucide="clipboard-list"></i> 作业通知</h3>
+        <span class="preview-tag">新作业</span>
+      </div>
+      <div class="preview-body">
+        <div class="preview-type" id="pvType">课后作业</div>
+        <div class="preview-title" id="pvTitle">作业标题将显示在这里</div>
+        <div class="preview-meta">
+          <span class="preview-meta-item" id="pvCourse"><i data-lucide="book-open"></i> 请选择课程</span>
+          <span class="preview-meta-item" id="pvScore"><i data-lucide="target"></i> 100 分</span>
+          <span class="preview-meta-item" id="pvDeadline"><i data-lucide="clock"></i> 待设定截止时间</span>
+        </div>
+        <div class="preview-desc" id="pvDesc">在这里输入作业描述，学生会看到这段文字。可以写明要求、注意事项、参考资料等。</div>
+        <div style="font-size:0.72rem;color:#aaa;margin-bottom:6px">接受文件格式：</div>
+        <div class="preview-meta" id="pvFormat"><span class="preview-meta-item" style="color:#ccc">未选择</span></div>
+        <div style="font-size:0.72rem;color:#aaa;margin-bottom:6px;margin-top:10px">发布到：</div>
+        <div class="preview-classes" id="pvClasses">
+          <span class="preview-class-tag" style="color:#ccc">未选择班级</span>
+        </div>
+        <div class="preview-settings" id="pvSettings">
+          <span class="preview-setting">允许覆盖提交</span>
+        </div>
+      </div>
+      <div class="preview-footer">
+        <span id="pvAuthor">管理员</span>
+        <span>刚刚发布</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="listPanel">
+<!-- Existing Assignments List -->
+<div class="assign-list-section anim">
+  <div class="assign-list-header">
+    <h2><i data-lucide="list"></i> 已发布的作业</h2>
+    <div class="assign-list-actions">
+      <select class="form-select" id="a-filter-course"><option value="">全部课程</option></select>
+    </div>
+  </div>
+  <div class="panel"><table class="data-table">
+    <thead><tr><th>作业标题</th><th>所属课程</th><th>截止时间</th><th>提交数</th><th>已批数</th><th>创建时间</th><th>操作</th></tr></thead>
+    <tbody id="assignments-tbody"><tr><td colspan="7" class="empty-msg">加载中...</td></tr></tbody>
+  </table></div>
+</div>
+</div>
+
+</main></div>
+
+
+
+<!-- Publish status toast -->
+<div class="publish-status" id="publishStatus"></div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="assignments.js"></script>
+</body></html>

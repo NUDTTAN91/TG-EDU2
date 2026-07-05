@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<style>
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;}
+.modal-box{background:#fff;border-radius:12px;padding:28px 32px;min-width:360px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+[data-theme="dark"] .modal-box{background:var(--card);}
+.student-list{max-height:400px;overflow-y:auto;margin:16px 0;}
+.student-list table{width:100%;border-collapse:collapse;}
+.student-list th{text-align:left;padding:8px 12px;font-size:0.78rem;font-weight:700;border-bottom:2px solid #eee;color:#666;}
+.student-list td{padding:8px 12px;font-size:0.85rem;border-bottom:1px solid #f0ede6;}
+.student-list tr:last-child td{border-bottom:none;}
+[data-theme="dark"] .student-list th{border-bottom-color:var(--border-lighter);color:var(--text-muted);}
+[data-theme="dark"] .student-list td{border-bottom-color:var(--border-lighter);}
+
+/* 空状态 */
+.empty-state{display:none;flex-direction:column;align-items:center;padding:48px 20px;color:var(--text-light);text-align:center;}
+.empty-state i{width:48px;height:48px;margin-bottom:12px;opacity:0.4;}
+.empty-state p{font-size:0.88rem;margin:0;}
+
+/* 按钮缩小 */
+.btn-sm{padding:5px 12px;font-size:0.75rem;}
+
+/* Tab 按钮组 */
+.topbar-left{display:flex;align-items:center;gap:20px;flex:1;min-width:0;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.tab-group{display:flex;background:var(--bg-subtle);border-radius:10px;padding:3px;border:2px solid var(--ink);}
+.tab-btn{padding:6px 14px;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;background:transparent;color:var(--text-muted);transition:all 0.15s;font-family:inherit;white-space:nowrap;}
+.tab-btn.active{background:var(--yellow);color:var(--ink);box-shadow:2px 2px 0 var(--ink);}
+.tab-btn:hover:not(.active){color:var(--ink);background:var(--bg-subtle2);}
+
+/* Tab 面板 */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* 暗色模式 Tab */
+[data-theme="dark"] .tab-group{background:var(--bg-subtle);border-color:#555;}
+[data-theme="dark"] .tab-btn{color:var(--text-light);}
+[data-theme="dark"] .tab-btn.active{background:var(--yellow);color:var(--ink);box-shadow:2px 2px 0 rgba(0,0,0,0.3);}
+</style>
+</head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link active" href="schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校及班级管理</a>
+<a class="side-link" href="users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="assignments.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 作业管理</a>
+<a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业</a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name" id="sidebar-username">管理员</div><div class="user-role" id="sidebar-role">超级管理员</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><div class="topbar-left"><h1><i data-lucide="building-2"></i> 院校及班级管理</h1><div class="tab-group"><button class="tab-btn active" data-tab="schools">院校列表</button><button class="tab-btn" data-tab="classes">班级列表</button></div></div><div class="topbar-right"><button class="btn btn-primary" id="add-school-btn">+ 添加院校</button><button class="btn btn-primary" id="add-class-btn" style="display:none">+ 添加班级</button></div></div>
+
+<!-- 院校面板 -->
+<div class="tab-panel active" id="panel-schools">
+<div id="schools-empty" class="empty-state anim"><i data-lucide="building-2"></i><p>暂无院校，点击右上角添加</p></div>
+<div class="panel" id="schools-panel-wrapper" style="display:none">
+<table class="data-table" id="schools-table">
+<thead><tr><th>院校名称</th><th>学生数</th><th>操作</th></tr></thead>
+<tbody id="schools-tbody"></tbody>
+</table>
+</div>
+</div>
+
+<!-- 班级面板 -->
+<div class="tab-panel" id="panel-classes" style="display:none">
+<div class="filter-bar">
+<select class="form-select" style="width:200px" id="filter-school"><option value="">全部院校</option></select>
+</div>
+<div id="classes-empty" class="empty-state anim"><i data-lucide="users"></i><p>暂无班级，点击右上角添加</p></div>
+<div class="panel" id="classes-panel-wrapper" style="display:none">
+<table class="data-table" id="classes-table">
+<thead><tr><th>班级名称</th><th>所属学校</th><th>学生数</th><th>创建时间</th><th>操作</th></tr></thead>
+<tbody id="classes-tbody"></tbody>
+</table>
+</div>
+</div>
+
+</main></div>
+
+<!-- 添加院校弹窗 -->
+<div id="school-modal-overlay" class="overlay">
+<div class="modal-box">
+<h3 style="margin:0 0 20px;font-size:1.1rem;">添加院校</h3>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">院校名称</label>
+<input id="school-modal-name" class="form-input" style="width:100%" placeholder="请输入院校名称">
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="school-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="school-modal-save" class="btn btn-primary">提交</button>
+</div>
+</div>
+</div>
+
+<!-- 编辑院校弹窗 -->
+<div id="edit-school-modal-overlay" class="overlay">
+<div class="modal-box">
+<h3 id="edit-school-modal-title" style="margin:0 0 20px;font-size:1.1rem;">编辑院校</h3>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">院校名称</label>
+<input id="edit-school-modal-name" class="form-input" style="width:100%" placeholder="请输入院校名称">
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="edit-school-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="edit-school-modal-save" class="btn btn-primary">保存</button>
+</div>
+</div>
+</div>
+
+<!-- 添加班级弹窗 -->
+<div id="class-modal-overlay" class="overlay">
+<div class="modal-box">
+<h3 style="margin:0 0 20px;font-size:1.1rem;">添加班级</h3>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">所属学校</label>
+<select id="class-modal-school" class="form-select" style="width:100%"><option value="">请选择学校</option></select>
+</div>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">班级名称</label>
+<input id="class-modal-name" class="form-input" style="width:100%" placeholder="请输入班级名称">
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="class-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="class-modal-save" class="btn btn-primary">提交</button>
+</div>
+</div>
+</div>
+
+<!-- 编辑班级弹窗 -->
+<div id="edit-class-modal-overlay" class="overlay">
+<div class="modal-box">
+<h3 id="edit-class-modal-title" style="margin:0 0 20px;font-size:1.1rem;">编辑班级</h3>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">班级名称</label>
+<input id="edit-class-modal-name" class="form-input" style="width:100%" placeholder="请输入班级名称">
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="edit-class-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="edit-class-modal-save" class="btn btn-primary">保存</button>
+</div>
+</div>
+</div>
+
+<!-- 查看班级学生弹窗 -->
+<div id="students-modal-overlay" class="overlay">
+<div class="modal-box" style="min-width:420px;">
+<h3 id="students-modal-title" style="margin:0 0 8px;font-size:1.1rem;">班级学生</h3>
+<div class="student-list" id="students-modal-list">
+<table>
+<thead><tr><th>账号</th><th>姓名</th></tr></thead>
+<tbody id="students-modal-tbody"></tbody>
+</table>
+</div>
+<div style="display:flex;justify-content:flex-end;">
+<button id="students-modal-close" class="btn btn-secondary">关闭</button>
+</div>
+</div>
+</div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="schools.js"></script>
+</body></html>

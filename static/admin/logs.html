@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/admin-logs.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校及班级管理</a>
+<a class="side-link" href="users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="assignments.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 作业管理</a>
+<a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业</a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link active" href="logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name" id="sidebar-username">管理员</div><div class="user-role" id="sidebar-role">超级管理员</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="clipboard-list"></i> 操作日志</h1><button class="btn btn-secondary">导出日志</button></div>
+
+<div class="log-filters anim">
+<button class="filter-btn log-filter-btn active" data-category="all">全部</button>
+<button class="filter-btn log-filter-btn" data-category="login">登录</button>
+<button class="filter-btn log-filter-btn" data-category="user_management">用户管理</button>
+<button class="filter-btn log-filter-btn" data-category="system_settings">系统设置</button>
+<button class="filter-btn log-filter-btn" data-category="school_management">院校管理</button>
+</div>
+
+<div class="panel anim" id="log-list">
+<div style="text-align:center;padding:60px 20px;color:#999">加载中...</div>
+</div>
+</main></div>
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="logs.js"></script>
+</body></html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TG-EDU2</title>
+<link rel="icon" type="image/svg+xml" href="/TeamIco.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/dashboard-student.css">
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交
+  </div>
+  <div class="sidebar-school" id="sidebar-school" style="padding-bottom:16px;border-bottom:2px solid #eee;margin-bottom:16px"></div>
+
+  <a class="side-link active" href="dashboard.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 作业面板</a>
+  <a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的作业</a>
+  <a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="upload"></i></span> 提交记录</a>
+  <a class="side-link" href="grades.html"><span class="ico"><i data-lucide="trophy"></i></span> 成绩查看</a>
+  <a class="side-link" href="#" onclick="alert('暂未开放');return false;"><span class="ico"><i data-lucide="message-circle"></i></span> 消息通知</a>
+
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" style="background:var(--yellow)"><i data-lucide="graduation-cap"></i></div>
+      <div>
+        <div class="user-name" id="sidebar-username"></div>
+        <div class="user-role" id="sidebar-role"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button>
+  </div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1 id="greeting-text"></h1></div>
+
+<section class="hero">
+<div class="hero-greeting">保持节奏，稳步前进<span>。</span></div>
+<p class="hero-desc" id="hero-desc"></p>
+<div class="hero-pills"><span class="hero-pill">2026 春季学期</span></div>
+<div class="hero-stats" id="hero-stats"></div>
+</section>
+
+</main>
+<div class="status-bar">Copyright © 2026 commit() · All Rights Reserved.</div>
+</div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

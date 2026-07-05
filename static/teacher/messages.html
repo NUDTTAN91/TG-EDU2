@@ -1,0 +1,51 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/teacher-messages.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">院校 A · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--sky)">教师</span> 教师工作台</div>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的课程</a>
+<a class="side-link" href="assign.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 布置作业</a>
+<a class="side-link" href="grade.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业 <span class="badge">23</span></a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">其他</div>
+<a class="side-link active" href="messages.html"><span class="ico"><i data-lucide="message-circle"></i></span> 学生留言 <span class="badge">5</span></a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="settings"></i></span> 设置</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--lavender)"><i data-lucide="user"></i></div><div><div class="user-name" id="sidebar-username">教师 001</div><div class="user-role" id="sidebar-role">计算机科学与技术</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="message-circle"></i> 学生留言</h1></div>
+
+<div class="msg-layout anim">
+<div class="msg-list">
+<div class="msg-head">消息（5 条未读）</div>
+<div class="m-item unread active"><div class="m-avatar" style="background:var(--sky)">S1</div><div class="m-info"><div class="m-name">学生 001</div><div class="m-preview">老师，实验报告4的第3题我不太理解…</div></div><div class="m-time">10分钟前</div></div>
+<div class="m-item unread"><div class="m-avatar" style="background:var(--lime)">S3</div><div class="m-info"><div class="m-name">学生 003</div><div class="m-preview">请问作业可以延期提交吗？</div></div><div class="m-time">2小时前</div></div>
+<div class="m-item unread"><div class="m-avatar" style="background:var(--yellow)">S7</div><div class="m-info"><div class="m-name">学生 007</div><div class="m-preview">老师好，我想问一下期末考试的范围…</div></div><div class="m-time">昨天</div></div>
+<div class="m-item"><div class="m-avatar" style="background:var(--pink);color:#fff">S5</div><div class="m-info"><div class="m-name">学生 005</div><div class="m-preview">谢谢老师的批改意见！</div></div><div class="m-time">3天前</div></div>
+<div class="m-item"><div class="m-avatar" style="background:var(--lavender)">S9</div><div class="m-info"><div class="m-name">学生 009</div><div class="m-preview">好的，我知道了，谢谢老师</div></div><div class="m-time">5天前</div></div>
+</div>
+<div class="chat-area">
+<div class="chat-head"><div class="m-avatar" style="background:var(--sky)">S1</div><div><div class="chat-head-name">学生 001</div><div class="chat-head-meta">数据结构 · 实验报告 4 · 2024级计算机3班</div></div></div>
+<div class="chat-body">
+<div class="bubble bubble-in">老师好，我在做实验报告4的时候，第3题关于二叉搜索树的删除操作不太理解，能不能给我讲解一下？<div class="bubble-time">今天 14:20</div></div>
+<div class="bubble bubble-out">好的，BST删除操作分三种情况：叶子节点直接删、只有一个子节点用子节点替换、有两个子节点找后继节点替换后删后继。<div class="bubble-time">今天 14:35</div></div>
+<div class="bubble bubble-in">那找后继节点是找右子树的最小值对吗？<div class="bubble-time">今天 14:38</div></div>
+<div class="bubble bubble-out">对的，就是右子树里最小的那个节点。<div class="bubble-time">今天 14:40</div></div>
+</div>
+<div class="chat-input"><input placeholder="输入回复…" onkeydown="if(event.key==='Enter')this.value=''"><button>发送</button></div>
+</div>
+</div>
+</main></div>
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function() { if (!Auth.requireRole('teacher')) return; });</script>
+</body></html>

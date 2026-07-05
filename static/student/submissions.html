@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TG-EDU2</title>
+<link rel="icon" type="image/svg+xml" href="/TeamIco.svg">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/dashboard-student.css">
+<style>
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal-box{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:28px 32px;min-width:400px;max-width:92vw;box-shadow:6px 6px 0 var(--ink)}
+[data-theme="dark"] .modal-box{background:#1e1e1e;box-shadow:6px 6px 0 #555;border-color:#555}
+.modal-box h3{margin:0 0 20px;font-size:1.1rem}
+.modal-box label{display:block;margin-bottom:4px;font-size:.85rem;font-weight:600;color:#555}
+[data-theme="dark"] .modal-box label{color:#ccc}
+.modal-box .form-textarea{width:100%;margin-bottom:14px}
+.modal-error{display:none;color:#e74c3c;font-size:.85rem;margin-bottom:12px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+.status-tag{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:14px;font-size:.72rem;font-weight:600}
+.status-submitted{background:rgba(88,166,255,.1);color:#58a6ff}
+.status-graded{background:rgba(63,185,80,.1);color:#3fb950}
+.status-overdue{background:rgba(248,81,73,.1);color:#f85149}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交
+  </div>
+  <div class="sidebar-school" id="sidebar-school" style="padding-bottom:16px;border-bottom:2px solid #eee;margin-bottom:16px"></div>
+
+  <a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 作业面板</a>
+  <a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的作业</a>
+  <a class="side-link active" href="submissions.html"><span class="ico"><i data-lucide="upload"></i></span> 提交记录</a>
+  <a class="side-link" href="grades.html"><span class="ico"><i data-lucide="trophy"></i></span> 成绩查看</a>
+  <a class="side-link" href="#" onclick="alert('暂未开放');return false;"><span class="ico"><i data-lucide="message-circle"></i></span> 消息通知</a>
+
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <div class="user-avatar" style="background:var(--yellow)"><i data-lucide="graduation-cap"></i></div>
+      <div>
+        <div class="user-name" id="sidebar-username"></div>
+        <div class="user-role" id="sidebar-role"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button>
+  </div>
+</aside>
+
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="upload"></i> 提交记录</h1></div>
+
+<!-- 筛选栏 -->
+<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+  <select class="form-select" id="filter-course" style="width:160px">
+    <option value="">全部课程</option>
+  </select>
+  <select class="form-select" id="filter-status" style="width:140px">
+    <option value="">全部状态</option>
+    <option value="submitted">已提交</option>
+    <option value="graded">已批改</option>
+    <option value="overdue">逾期</option>
+  </select>
+</div>
+
+<!-- 提交记录表格 -->
+<div class="panel anim">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>作业名称</th>
+        <th>所属课程</th>
+        <th>提交文件</th>
+        <th>提交时间</th>
+        <th>状态</th>
+        <th>成绩</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="submissions-tbody">
+      <tr><td colspan="7" style="text-align:center;padding:40px;color:#999">加载中...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 补交申请弹窗 -->
+<div class="overlay" id="late-overlay">
+  <div class="modal-box">
+    <h3>申请补交</h3>
+    <label>补交理由</label>
+    <textarea class="form-textarea" id="late-reason" style="min-height:80px" placeholder="请说明补交理由..."></textarea>
+    <div class="modal-error" id="late-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('late-overlay')">取消</button>
+      <button class="btn btn-primary" id="late-submit-btn" onclick="submitLateRequest()">提交申请</button>
+    </div>
+  </div>
+</div>
+
+</main>
+<div class="status-bar">Copyright © 2026 commit() · All Rights Reserved.</div>
+</div>
+
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="submissions.js"></script>
+</body>
+</html>

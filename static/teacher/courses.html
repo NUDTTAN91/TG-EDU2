@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css">
+<link rel="stylesheet" href="../assets/css/teacher-courses.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--yellow)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">院校 A · 2026春季学期</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--sky)">教师</span> 教师工作台</div>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link active" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 我的课程</a>
+<a class="side-link" href="assign.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 布置作业</a>
+<a class="side-link" href="grade.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业 <span class="badge">23</span></a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">其他</div>
+<a class="side-link" href="messages.html"><span class="ico"><i data-lucide="message-circle"></i></span> 学生留言 <span class="badge">5</span></a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="settings"></i></span> 设置</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--lavender)"><i data-lucide="user"></i></div><div><div class="user-name" id="sidebar-username">教师 001</div><div class="user-role" id="sidebar-role">计算机科学与技术</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="book-open"></i> 我的课程</h1></div>
+
+<div class="course-detail anim">
+<div class="cd-head"><div><div class="cd-title">数据结构与算法</div><div class="cd-meta">计算机科学与技术 · 2026春季学期</div></div><button class="btn btn-primary">布置新作业</button></div>
+<div class="cd-stats"><span class="cd-stat">4 个班级</span><span class="cd-stat">186 名学生</span><span class="cd-stat">已布置 8 次作业</span><span class="cd-stat">待批改 23 份</span></div>
+<div class="class-section">
+<h3>班级列表</h3>
+<div class="class-card"><span class="dot dot-green"></span><div class="class-info"><div class="class-name">2024级 计算机3班</div><div class="class-meta">48人 · 提交率 94% · 平均分 84.2</div></div><button class="btn btn-secondary">进入</button></div>
+<div class="class-card"><span class="dot dot-yellow"></span><div class="class-info"><div class="class-name">2024级 计算机1班</div><div class="class-meta">46人 · 提交率 88% · 平均分 81.5</div></div><button class="btn btn-secondary">进入</button></div>
+<div class="class-card"><span class="dot dot-green"></span><div class="class-info"><div class="class-name">2024级 计算机2班</div><div class="class-meta">48人 · 提交率 92% · 平均分 83.8</div></div><button class="btn btn-secondary">进入</button></div>
+<div class="class-card"><span class="dot dot-green"></span><div class="class-info"><div class="class-name">2024级 软件工程1班</div><div class="class-meta">44人 · 提交率 96% · 平均分 86.1</div></div><button class="btn btn-secondary">进入</button></div>
+</div>
+</div>
+
+<div class="course-detail anim" style="--accent:var(--pink)">
+<div class="cd-head"><div><div class="cd-title">高等数学 A</div><div class="cd-meta">理学院通识课 · 2026春季学期</div></div><button class="btn btn-primary">布置新作业</button></div>
+<div class="cd-stats"><span class="cd-stat">1 个班级</span><span class="cd-stat">52 名学生</span><span class="cd-stat">已布置 9 次作业</span><span class="cd-stat">待批改 8 份</span></div>
+</div>
+
+<div class="course-detail anim">
+<div class="cd-head"><div><div class="cd-title">算法设计</div><div class="cd-meta">计算机科学与技术 · 2026春季学期</div></div><button class="btn btn-primary">布置新作业</button></div>
+<div class="cd-stats"><span class="cd-stat">1 个班级</span><span class="cd-stat">46 名学生</span><span class="cd-stat">已布置 5 次作业</span><span class="cd-stat">待批改 3 份</span></div>
+</div>
+
+<div class="course-detail anim">
+<div class="cd-head"><div><div class="cd-title">学术英语写作</div><div class="cd-meta">外语学院通识课 · 2026春季学期</div></div><button class="btn btn-primary">布置新作业</button></div>
+<div class="cd-stats"><span class="cd-stat">1 个班级</span><span class="cd-stat">40 名学生</span><span class="cd-stat">已布置 4 次作业</span><span class="cd-stat">待批改 0 份</span></div>
+</div>
+</main></div>
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>document.addEventListener('DOMContentLoaded', function() { if (!Auth.requireRole('teacher')) return; });</script>
+</body></html>

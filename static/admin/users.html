@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>TG-EDU2</title><link rel="icon" type="image/svg+xml" href="/TeamIco.svg"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/shared.css"></head><body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-logo"><span class="icon-box" style="background:var(--pink)"><i data-lucide="pen-tool"></i></span> 作业提交</div>
+<div class="sidebar-school">系统全局 · 所有院校</div>
+<div class="sidebar-role"><span class="role-tag" style="background:var(--pink);color:#fff">超级管理员</span> 系统管理</div>
+<div class="nav-section">平台管理</div>
+<a class="side-link" href="dashboard.html"><span class="ico"><i data-lucide="bar-chart-3"></i></span> 控制台</a>
+<a class="side-link" href="schools.html"><span class="ico"><i data-lucide="building-2"></i></span> 院校及班级管理</a>
+<a class="side-link active" href="users.html"><span class="ico"><i data-lucide="user"></i></span> 用户管理</a>
+<a class="side-link" href="courses.html"><span class="ico"><i data-lucide="book-open"></i></span> 课程管理</a>
+<div class="nav-section">教学管理</div>
+<a class="side-link" href="assignments.html"><span class="ico"><i data-lucide="pen-tool"></i></span> 作业管理</a>
+<a class="side-link" href="submissions.html"><span class="ico"><i data-lucide="check-circle"></i></span> 批改作业</a>
+<a class="side-link" href="scores.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 成绩管理</a>
+<div class="nav-section">系统</div>
+<a class="side-link" href="stats.html"><span class="ico"><i data-lucide="trending-up"></i></span> 数据统计</a>
+<a class="side-link" href="settings.html"><span class="ico"><i data-lucide="wrench"></i></span> 系统设置</a>
+<a class="side-link" href="logs.html"><span class="ico"><i data-lucide="clipboard-list"></i></span> 操作日志</a>
+<div class="sidebar-bottom"><div class="user-info"><div class="user-avatar" style="background:var(--ink);color:#fff"><i data-lucide="shield"></i></div><div><div class="user-name" id="sidebar-username">管理员</div><div class="user-role" id="sidebar-role">超级管理员</div></div></div><button class="logout-btn" onclick="Auth.logout()"><i data-lucide="log-out" style="width:16px;height:16px"></i> 退出登录</button></div>
+</aside>
+<main class="main">
+<button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="topbar"><h1><i data-lucide="user"></i> 用户管理</h1><div style="display:flex;gap:8px"><button class="btn btn-secondary">导出列表</button><button class="btn btn-primary" id="add-user-btn">+ 添加用户</button></div></div>
+
+<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;" class="anim">
+<select id="filter-school" class="form-select" style="width:160px"><option value="">全部院校</option></select>
+<select id="filter-role" class="form-select" style="width:120px"><option value="">全部角色</option><option value="teacher">教师</option><option value="student">学生</option><option value="admin">管理员</option></select>
+<input id="filter-search" class="form-input" style="width:200px" placeholder="搜索姓名 / 账号…">
+</div>
+
+<div class="panel anim">
+<table class="data-table">
+<thead><tr><th style="width:60px"></th><th>账号</th><th>姓名</th><th>角色</th><th>所属院校</th><th>所属班级</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+<tbody id="users-tbody">
+<tr id="users-empty" style="display:none"><td colspan="9" style="text-align:center;padding:24px;color:#999;">暂无用户</td></tr>
+</tbody>
+</table>
+</div>
+</main></div>
+<!-- 添加用户弹窗 -->
+<div id="user-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+<div style="background:#fff;border-radius:12px;padding:28px 32px;min-width:380px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+<h3 style="margin:0 0 20px;font-size:1.1rem;">添加用户</h3>
+<div style="margin-bottom:14px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">账号</label>
+<input id="user-modal-username" class="form-input" style="width:100%" placeholder="请输入账号">
+</div>
+<div style="margin-bottom:14px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">姓名</label>
+<input id="user-modal-fullname" class="form-input" style="width:100%" placeholder="请输入姓名">
+</div>
+<div style="margin-bottom:14px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">角色</label>
+<select id="user-modal-role" class="form-select" style="width:100%">
+<option value="">请选择角色</option>
+<option value="teacher">教师</option>
+<option value="student">学生</option>
+</select>
+</div>
+<div id="user-school-row" style="margin-bottom:14px;display:none;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">所属院校</label>
+<select id="user-modal-school" class="form-select" style="width:100%">
+<option value="">请选择院校</option>
+</select>
+</div>
+<div id="user-class-row" style="margin-bottom:14px;display:none;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">所属班级</label>
+<select id="user-modal-class" class="form-select" style="width:100%">
+<option value="">请选择班级</option>
+</select>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="user-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="user-modal-save" class="btn btn-primary">创建</button>
+</div>
+</div>
+</div>
+<script src="../assets/js/lucide.js"></script>
+<script src="../assets/js/shared.js"></script>
+<script src="../assets/js/api.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script src="users.js"></script>
+</body></html>

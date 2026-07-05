@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TG-EDU2</title>
+<link rel="icon" type="image/svg+xml" href="/TeamIco.svg">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/login.css">
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Left Panel -->
+  <div class="left-panel">
+    <div class="left-top">
+      <div class="left-logo">
+        <a href="index.html">
+          <span class="icon-box"><i data-lucide="pen-tool"></i></span>
+          <span>作业提交</span>
+        </a>
+      </div>
+
+      <!-- Doodles -->
+      <svg class="left-doodle-star" viewBox="0 0 40 40" fill="none">
+        <path d="M20 2 L24 15 L38 15 L27 23 L31 37 L20 28 L9 37 L13 23 L2 15 L16 15Z" stroke="#fff" stroke-width="1.5" fill="none"/>
+      </svg>
+      <div class="left-doodle-circle"></div>
+
+      <div class="left-content">
+        <h2>登录后就能<br><span class="hl">交作业</span>了</h2>
+        <p>选择你的院校，用统一身份认证登录。学生和老师都可以用。</p>
+      </div>
+
+      <div class="left-cards">
+        <div class="mini-card mc-1">
+          <div class="mc-icon"><i data-lucide="paperclip"></i></div>
+          <div class="mc-text"><strong>拖拽上传</strong><br>pdf、word、zip 都行</div>
+        </div>
+        <div class="mini-card mc-2">
+          <div class="mc-icon"><i data-lucide="clock"></i></div>
+          <div class="mc-text"><strong>自动提醒</strong><br>截止前帮你盯着</div>
+        </div>
+        <div class="mini-card mc-3">
+          <div class="mc-icon"><i data-lucide="lock"></i></div>
+          <div class="mc-text"><strong>时间戳锁定</strong><br>提交即生效，不扯皮</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="left-footer">
+      <span>© 2026 DropInk</span>
+      <div style="display:flex; gap:16px;">
+        <a href="#">使用帮助</a>
+        <a href="#">隐私说明</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="right-panel">
+    <a href="index.html" class="mobile-back">← 返回首页</a>
+
+    <!-- Doodle -->
+    <svg class="right-doodle-arrow" viewBox="0 0 80 60" fill="none">
+      <path d="M5 50 C 20 40, 50 20, 75 10" stroke="#1d1d1d" stroke-width="2" stroke-linecap="round" fill="none"/>
+      <path d="M63 4 L 77 10 L 65 20" stroke="#1d1d1d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+
+    <div class="login-wrap">
+      <div class="login-header">
+        <div class="tag"><i data-lucide="circle-check" style="width:14px;height:14px"></i> 系统运行中</div>
+        <h1>登录你的账号</h1>
+        <p>选院校 → 输入账号密码 → 完事</p>
+      </div>
+
+      <form id="loginForm" onsubmit="return false;">
+        <!-- School -->
+        <div class="school-select-group">
+          <div class="field-label"><span class="num">1</span> 选择院校</div>
+          <select class="school-select placeholder" id="schoolSelect" onchange="this.classList.toggle('placeholder', !this.value)">
+            <option value="">请选择你的院校…</option>
+          </select>
+        </div>
+
+        <!-- Role -->
+        <div class="role-group">
+          <div class="field-label"><span class="num">2</span> 登录身份</div>
+          <div class="role-cards">
+            <button class="role-card selected" onclick="selectRole(this, 'student')">
+              <span class="role-emoji"><i data-lucide="graduation-cap"></i></span>学生
+            </button>
+            <button class="role-card" onclick="selectRole(this, 'teacher')">
+              <span class="role-emoji"><i data-lucide="user"></i></span>教师
+            </button>
+            <button class="role-card" onclick="selectRole(this, 'admin')">
+              <span class="role-emoji"><i data-lucide="shield"></i></span>管理员
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="field-label"><span class="num">3</span> 账号</div>
+          <input type="text" class="form-input" id="usernameInput" placeholder="学号 / 工号" autocomplete="username">
+        </div>
+
+        <div class="form-group" style="position:relative;">
+          <div class="field-label"><span class="num">4</span> 密码</div>
+          <div class="password-wrap">
+            <input type="password" class="form-input" id="pwInput" placeholder="输入密码" autocomplete="current-password">
+            <button type="button" class="pw-toggle" onclick="togglePw()"><i data-lucide="eye"></i></button>
+          </div>
+          <span class="handwriting-note hn-1">别输错了!</span>
+        </div>
+
+        <!-- Options -->
+        <div class="form-options">
+          <label><input type="checkbox"> 记住我</label>
+          <a href="#">忘记密码？</a>
+        </div>
+
+        <!-- Error message -->
+        <div class="login-error" id="loginError" style="display:none;color:#d4432e;background:rgba(212,67,46,.08);border:1.5px solid #d4432e;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.85rem"></div>
+
+        <!-- Submit -->
+        <button type="submit" class="login-btn" id="loginBtn" onclick="handleLogin()">登 录 →</button>
+      </form>
+
+      <div class="divider">或者</div>
+
+      <button class="sso-btn" onclick="handleSSO()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        院校统一身份认证登录
+      </button>
+
+      <div class="login-help">
+        遇到问题？<a href="#">联系教务处</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/js/lucide.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/login.js"></script>
+</body>
+</html>
