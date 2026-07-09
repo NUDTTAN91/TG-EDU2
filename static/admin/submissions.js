@@ -307,13 +307,16 @@ function selectStudent(idx) {
     document.getElementById('fileName').textContent = s.file_name || '未知文件';
     document.getElementById('fileMeta').textContent = '提交于 ' + formatDateTime(s.submitted_at);
 
-    // Click file preview to open in new tab
+    // Click file preview to authenticated download
     var fp = document.getElementById('filePreview');
     if (fp) {
-        if (s.file_path) {
-            var furl = s.file_path.charAt(0) === '/' ? s.file_path : '/' + s.file_path;
+        if (s.id) {
             fp.style.cursor = 'pointer';
-            fp.onclick = function() { window.open(furl, '_blank'); };
+            fp.onclick = function() {
+                API.download('/submissions/' + s.id + '/download', s.file_name || '').catch(function(err) {
+                    alert('下载失败: ' + (err.message || '未知错误'));
+                });
+            };
         } else {
             fp.style.cursor = 'default';
             fp.onclick = null;

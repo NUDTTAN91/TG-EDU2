@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete as sql_delete
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
@@ -23,6 +23,21 @@ class AssignmentCreate(BaseModel):
     attachments: str = ".cpp,.c,.java,.py,.zip"
     max_file_size_mb: int = 50
 
+    @field_validator("attachments")
+    @classmethod
+    def _attachments_non_empty(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("attachments 不得为空")
+        return v
+
+    @field_validator("max_file_size_mb")
+    @classmethod
+    def _max_size_positive(cls, v: int) -> int:
+        if v is None or v < 1 or v > 500:
+            raise ValueError("max_file_size_mb 需在 1 到 500 之间")
+        return v
+
 
 class AssignmentUpdate(BaseModel):
     title: Optional[str] = None
@@ -30,6 +45,25 @@ class AssignmentUpdate(BaseModel):
     deadline: Optional[datetime] = None
     attachments: Optional[str] = None
     max_file_size_mb: Optional[int] = None
+
+    @field_validator("attachments")
+    @classmethod
+    def _attachments_non_empty(cls, v):
+        if v is None:
+            return v
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("attachments 不得为空")
+        return stripped
+
+    @field_validator("max_file_size_mb")
+    @classmethod
+    def _max_size_positive(cls, v):
+        if v is None:
+            return v
+        if v < 1 or v > 500:
+            raise ValueError("max_file_size_mb 需在 1 到 500 之间")
+        return v
 
 
 class AssignmentResponse(BaseModel):

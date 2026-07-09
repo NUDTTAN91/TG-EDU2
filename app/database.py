@@ -205,3 +205,60 @@ async def init_db():
                 ), {"folder": folder, "aid": aid})
 
         await conn.run_sync(_migrate_folder_name)
+
+    # late_submissions 表迁移：新增 assignment_id / student_id 列；把 submission_id 改为可空
+    # 以支持「学生逾期未提交时直接申请补交」的新流程。幂等安全。
+    async with engine.begin() as conn:
+        def _migrate_late_submissions(connection):
+            from sqlalchemy import inspect, text
+            insp = inspect(connection)
+            if "late_submissions" not in insp.get_table_names():
+                return
+            cols = {c["name"]: c for c in insp.get_columns("late_submissions")}
+            need_add_assignment = "assignment_id" not in cols
+            need_add_student = "student_id" not in cols
+            submission_not_null = (
+                "submission_id" in cols and not cols["submission_id"].get("nullable", True)
+            )
+            if need_add_assignment:
+                connection.execute(text(
+                    "ALTER TABLE late_submissions ADD COLUMN assignment_id INTEGER REFERENCES assignments(id)"
+                ))
+            if need_add_student:
+                connection.execute(text(
+                    "ALTER TABLE late_submissions ADD COLUMN student_id INTEGER REFERENCES users(id)"
+                ))
+            # SQLite 无法直接修改列的 nullable，需重建表
+            if submission_not_null:
+                connection.execute(text("PRAGMA foreign_keys=OFF"))
+                connection.execute(text("""
+                    CREATE TABLE IF NOT EXISTS late_submissions_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        submission_id INTEGER REFERENCES submissions(id),
+                        assignment_id INTEGER REFERENCES assignments(id),
+                        student_id INTEGER REFERENCES users(id),
+                        reason TEXT,
+                        status VARCHAR(20) DEFAULT 'pending',
+                        reviewed_by INTEGER REFERENCES users(id),
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        reviewed_at DATETIME
+                    )
+                """))
+                # 列名根据新旧共有重写
+                cols_after = {c["name"]: c for c in insp.get_columns("late_submissions")}
+                has_assignment = "assignment_id" in cols_after or need_add_assignment
+                has_student = "student_id" in cols_after or need_add_student
+                assignment_col = "assignment_id" if has_assignment else "NULL"
+                student_col = "student_id" if has_student else "NULL"
+                connection.execute(text(f"""
+                    INSERT INTO late_submissions_new
+                        (id, submission_id, assignment_id, student_id, reason, status, reviewed_by, created_at, reviewed_at)
+                    SELECT id, submission_id, {assignment_col}, {student_col}, reason, status, reviewed_by, created_at, reviewed_at
+                    FROM late_submissions
+                """))
+                connection.execute(text("DROP TABLE late_submissions"))
+                connection.execute(text("ALTER TABLE late_submissions_new RENAME TO late_submissions"))
+                connection.execute(text("CREATE INDEX IF NOT EXISTS ix_late_submissions_id ON late_submissions(id)"))
+                connection.execute(text("PRAGMA foreign_keys=ON"))
+
+        await conn.run_sync(_migrate_late_submissions)

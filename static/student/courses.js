@@ -292,7 +292,7 @@ function padZero(n) { return n < 10 ? '0' + n : '' + n; }
 
 // 绑定上传事件
 function bindUploadEvents() {
-    var fileInput = document.querySelector('#tab-upload input[type="file"]');
+    var fileInput = document.getElementById('courses-file-input');
     if (fileInput) {
         fileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
@@ -310,43 +310,118 @@ function bindUploadEvents() {
         });
     }
 
-    // 提交按钮
-    var submitBtn = document.querySelector('.btn-primary');
-    if (submitBtn && submitBtn.textContent.indexOf('提交') !== -1) {
+    // 作业选择变化时：更新上传区提示为该作业的 attachments 与大小上限
+    var selectEl = document.getElementById('submit-assignment-select');
+    if (selectEl) {
+        selectEl.addEventListener('change', updateUploadHint);
+        // 初始化一次，若预选中也能显示
+        setTimeout(updateUploadHint, 0);
+    }
+
+    // 提交按钮（精确按 id，避免文本匹配）
+    var submitBtn = document.getElementById('courses-submit-btn');
+    if (submitBtn) {
         submitBtn.addEventListener('click', function(e) {
             e.preventDefault();
             handleSubmission();
         });
     }
+
+    // 本地自测（未实现的占位按钮）
+    var previewBtn = document.getElementById('courses-preview-btn');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            showToast('本地自测功能暂未开放', 'error');
+        });
+    }
+}
+
+// 根据当前选中的作业更新上传提示
+function updateUploadHint() {
+    var hint = document.getElementById('courses-upload-hint');
+    if (!hint) return;
+    var selectEl = document.getElementById('submit-assignment-select');
+    var aid = selectEl ? parseInt(selectEl.value) : NaN;
+    if (!aid) {
+        hint.textContent = '选择上方作业后自动显示支持的格式与大小限制';
+        return;
+    }
+    var a = null;
+    for (var i = 0; i < _cachedAssignments.length; i++) {
+        if (_cachedAssignments[i].id === aid) { a = _cachedAssignments[i]; break; }
+    }
+    if (!a) return;
+    var exts = a.attachments || '.cpp,.c,.java,.py,.zip';
+    var size = a.max_file_size_mb || 50;
+    hint.textContent = '支持: ' + exts + ' · 单文件 ≤ ' + size + ' MB';
+}
+
+// 客户端预检：扩展名 + 大小
+function validateFileForAssignment(file, assignment) {
+    if (!file) return false;
+    var maxMb = (assignment && assignment.max_file_size_mb) || 50;
+    if (file.size > maxMb * 1024 * 1024) {
+        showError('文件大小超过限制 (' + maxMb + ' MB)');
+        return false;
+    }
+    var name = file.name || '';
+    var dot = name.lastIndexOf('.');
+    var ext = dot >= 0 ? name.substring(dot).toLowerCase() : '';
+    var raw = (assignment && assignment.attachments) || '.cpp,.c,.java,.py,.zip';
+    var allowed = raw.split(',').map(function(e) {
+        e = e.trim().toLowerCase();
+        return e && e.charAt(0) !== '.' ? '.' + e : e;
+    }).filter(Boolean);
+    if (allowed.indexOf(ext) === -1) {
+        showError('不允许的文件格式: ' + (ext || '(缺少扩展名)'));
+        return false;
+    }
+    return true;
 }
 
 // 处理提交
 function handleSubmission() {
-    var fileInput = document.querySelector('#tab-upload input[type="file"]');
+    var fileInput = document.getElementById('courses-file-input');
     if (!fileInput || !fileInput.files || !fileInput.files[0]) {
         showError('请先选择文件');
         return;
     }
 
     var selectEl = document.getElementById('submit-assignment-select');
-    var assignmentId = selectEl ? selectEl.value : '';
+    var assignmentId = selectEl ? parseInt(selectEl.value) : NaN;
 
     if (!assignmentId) {
         showError('请先选择要提交的作业');
         return;
     }
 
+    // 取作业对象做预检
+    var assignment = null;
+    for (var i = 0; i < _cachedAssignments.length; i++) {
+        if (_cachedAssignments[i].id === assignmentId) { assignment = _cachedAssignments[i]; break; }
+    }
+    if (!validateFileForAssignment(fileInput.files[0], assignment)) return;
+
     var formData = new FormData();
     formData.append('file', fileInput.files[0]);
 
-    var btn = document.querySelector('.btn-primary');
+    var btn = document.getElementById('courses-submit-btn');
     var originalText = btn ? btn.innerHTML : '';
+    var progressWrap = document.getElementById('courses-progress-wrap');
+    var progressBar = document.getElementById('courses-progress-bar');
+    var progressText = document.getElementById('courses-progress-text');
+
     if (btn) {
         btn.innerHTML = '<i data-lucide="loader"></i> 上传中…';
         btn.disabled = true;
     }
+    if (progressWrap) progressWrap.style.display = '';
 
-    API.upload('/submissions/?assignment_id=' + assignmentId, formData).then(function(result) {
+    API.uploadWithProgress('/submissions/?assignment_id=' + assignmentId, formData, function(pct) {
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (progressText) progressText.textContent = pct + '%';
+    }).then(function(result) {
         showSuccess('提交成功！');
         if (btn) {
             btn.innerHTML = originalText;
@@ -355,6 +430,10 @@ function handleSubmission() {
         fileInput.value = '';
         var chip = document.querySelector('.file-chip');
         if (chip) chip.style.display = 'none';
+        if (progressWrap) progressWrap.style.display = 'none';
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         loadCourses();
     }).catch(function(err) {
         showError('提交失败: ' + (err.message || '未知错误'));
@@ -362,6 +441,10 @@ function handleSubmission() {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
+        if (progressWrap) progressWrap.style.display = 'none';
+        if (progressBar) progressBar.style.width = '0%';
+        if (progressText) progressText.textContent = '0%';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 }
 
@@ -373,13 +456,19 @@ function uploadFile(btn, assignmentId) {
         return;
     }
 
+    var assignment = null;
+    for (var i = 0; i < _cachedAssignments.length; i++) {
+        if (_cachedAssignments[i].id === assignmentId) { assignment = _cachedAssignments[i]; break; }
+    }
+    if (!validateFileForAssignment(fileInput.files[0], assignment)) return;
+
     var formData = new FormData();
     formData.append('file', fileInput.files[0]);
 
     btn.textContent = '上传中…';
     btn.disabled = true;
 
-    API.upload('/submissions/?assignment_id=' + assignmentId, formData).then(function(result) {
+    API.uploadWithProgress('/submissions/?assignment_id=' + assignmentId, formData).then(function(result) {
         showSuccess('提交成功！');
         loadCourses();
     }).catch(function(err) {

@@ -91,7 +91,7 @@
 <!-- 补交申请弹窗 -->
 <div class="overlay" id="late-overlay">
   <div class="modal-box">
-    <h3>申请补交</h3>
+    <h3 id="late-title">申请补交</h3>
     <label>补交理由</label>
     <textarea class="form-textarea" id="late-reason" style="min-height:80px" placeholder="请说明补交理由..."></textarea>
     <div class="modal-error" id="late-error"></div>
@@ -101,6 +101,9 @@
     </div>
   </div>
 </div>
+
+<!-- 隐藏文件选择器（重新提交用） -->
+<input type="file" id="resubmit-file-input" style="display:none">
 
 </main>
 <div class="status-bar">Copyright © 2026 commit() · All Rights Reserved.</div>

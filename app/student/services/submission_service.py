@@ -23,8 +23,36 @@ async def get_submission(db: AsyncSession, submission_id: int):
     return result.scalar_one_or_none()
 
 
+async def get_submission_by_student_assignment(
+    db: AsyncSession, student_id: int, assignment_id: int
+):
+    result = await db.execute(
+        select(Submission).where(
+            Submission.student_id == student_id,
+            Submission.assignment_id == assignment_id,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def create_submission(db: AsyncSession, **kwargs):
     submission = Submission(**kwargs)
+    db.add(submission)
+    await db.commit()
+    await db.refresh(submission)
+    return submission
+
+
+async def update_submission_file(
+    db: AsyncSession,
+    submission: Submission,
+    file_path: str,
+    file_name: str,
+):
+    """重新提交时更新文件相关字段，保留成绩/反馈/批改人。"""
+    submission.file_path = file_path
+    submission.file_name = file_name
+    submission.submitted_at = cst_now()
     db.add(submission)
     await db.commit()
     await db.refresh(submission)

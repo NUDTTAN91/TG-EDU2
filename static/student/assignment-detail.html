@@ -64,6 +64,12 @@
       <p class="upload-zone-hint" id="upload-hint">支持的文件格式加载中...</p>
       <input type="file" id="detail-file-input">
     </label>
+    <div id="upload-progress-wrap" style="display:none;margin-top:10px">
+      <div style="height:8px;background:#eee;border-radius:4px;overflow:hidden">
+        <div id="upload-progress-bar" style="height:100%;width:0%;background:var(--yellow);transition:width .2s"></div>
+      </div>
+      <p id="upload-progress-text" style="margin-top:6px;font-size:.75rem;color:#999">0%</p>
+    </div>
     <button class="detail-submit-btn" id="detail-submit-btn"><i data-lucide="send" style="width:16px;height:16px"></i> 提交作业</button>
   </div>
 </div>
@@ -74,11 +80,15 @@
     <div class="detail-card-header-left">
       <i data-lucide="check-circle" style="width:16px;height:16px"></i> 提交记录
     </div>
+    <div class="detail-card-header-right" id="submission-record-actions"></div>
   </div>
   <div class="detail-record-body" id="submission-record-body">
     <!-- JS 动态填充 -->
   </div>
 </div>
+
+<!-- 隐藏文件选择器（重新提交用） -->
+<input type="file" id="resubmit-file-input" style="display:none">
 </main>
 <div class="status-bar">Copyright © 2026 commit() · All Rights Reserved.</div>
 </div>

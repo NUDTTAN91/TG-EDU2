@@ -116,10 +116,16 @@
     <option value="">请先选择作业</option>
   </select>
 </div>
-<label class="upload-zone"><div class="upload-zone-icon"><i data-lucide="upload"></i></div><p class="upload-zone-title">点击或拖拽文件到此处上传</p><p class="upload-zone-hint">支持 .cpp / .c / .java / .py / .zip · 单文件 ≤ 10MB</p><input type="file"></label></div>
+<label class="upload-zone"><div class="upload-zone-icon"><i data-lucide="upload"></i></div><p class="upload-zone-title">点击或拖拽文件到此处上传</p><p class="upload-zone-hint" id="courses-upload-hint">选择上方作业后自动显示支持的格式与大小限制</p><input type="file" id="courses-file-input"></label></div>
 <div id="tab-editor" class="tab-panel" style="display:none"><div class="code-block"><div class="code-row"><span class="code-num">1</span><span class="code-text"><span class="code-kw">#include</span> <span class="code-str">&lt;vector&gt;</span></span></div><div class="code-row"><span class="code-num">2</span><span class="code-text"><span class="code-kw">using namespace</span> std;</span></div><div class="code-row"><span class="code-num">4</span><span class="code-text"><span class="code-kw">struct</span> <span class="code-type">RBNode</span> {</span></div><div class="code-row"><span class="code-num">5</span><span class="code-text">  <span class="code-kw">int</span> key;</span></div><div class="code-row"><span class="code-num">6</span><span class="code-text">  <span class="code-kw">bool</span> red = <span class="code-str">true</span>;</span></div><div class="code-row"><span class="code-num">7</span><span class="code-text">  RBNode *l, *r, *p;</span></div><div class="code-row"><span class="code-num">8</span><span class="code-text">};</span></div><div class="code-row"><span class="code-num">10</span><span class="code-text"><span class="code-cmt">// TODO: 左旋后修复颜色</span></span></div><div class="code-row"><span class="code-num">11</span><span class="code-text"><span class="code-kw">void</span> <span class="code-type">insertFixup</span>(RBNode* z) {</span></div></div></div>
 <div class="file-chip" style="display:none"><svg class="file-chip-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg><div><div class="file-chip-name">rbtree_insert.cpp</div><div class="file-chip-meta">4.2 KB · 已暂存，等待提交</div></div><span class="file-chip-tag">Ready</span></div>
-<div class="btn-row"><button class="btn btn-ghost"><i data-lucide="play"></i> 本地自测</button><button class="btn btn-primary"><i data-lucide="send"></i> 提交评测</button></div>
+<div id="courses-progress-wrap" style="display:none;margin-top:10px">
+  <div style="height:8px;background:#eee;border-radius:4px;overflow:hidden">
+    <div id="courses-progress-bar" style="height:100%;width:0%;background:var(--yellow);transition:width .2s"></div>
+  </div>
+  <p id="courses-progress-text" style="margin-top:6px;font-size:.75rem;color:#999">0%</p>
+</div>
+<div class="btn-row"><button class="btn btn-ghost" id="courses-preview-btn"><i data-lucide="play"></i> 本地自测</button><button class="btn btn-primary" id="courses-submit-btn"><i data-lucide="send"></i> 提交评测</button></div>
 </div>
 </section>
 

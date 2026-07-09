@@ -46,12 +46,11 @@ app.include_router(admin.router)
 app.include_router(schools.router)
 app.include_router(logs.router)
 
-# 挂载上传文件目录（作业文件 + 头像）
+# 挂载头像目录（学生提交文件不再公开挂载，改走 GET /api/submissions/{id}/download 鉴权下载）
 SUBMISSIONS_DIR = Path("data/submissions")
 AVATARS_DIR = Path("data/avatars")
 SUBMISSIONS_DIR.mkdir(parents=True, exist_ok=True)
 AVATARS_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/data/submissions", StaticFiles(directory=str(SUBMISSIONS_DIR)), name="submissions")
 app.mount("/data/avatars", StaticFiles(directory=str(AVATARS_DIR)), name="avatars")
 
 

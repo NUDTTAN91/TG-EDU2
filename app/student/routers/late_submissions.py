@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, model_validator
+from typing import List, Optional
 from app.database import get_db
 from app.models.user import User
 from app.utils.dependencies import get_current_user, require_role
@@ -16,24 +16,36 @@ ERROR_STATUS_MAP = {
     "已有": 409,
     "不存在": 404,
     "未迟交": 400,
+    "尚未到截止时间": 400,
+    "未设置截止时间": 400,
+    "参数错误": 400,
 }
 
 
 def get_error_status(error_msg: str) -> int:
-    for keyword, status in ERROR_STATUS_MAP.items():
+    for keyword, status_code in ERROR_STATUS_MAP.items():
         if keyword in error_msg:
-            return status
-    return 400  # 默认 400
+            return status_code
+    return 400
 
 
 class LateSubmissionRequest(BaseModel):
-    submission_id: int
+    submission_id: Optional[int] = None
+    assignment_id: Optional[int] = None
     reason: str = ""
+
+    @model_validator(mode="after")
+    def _at_least_one(self):
+        if self.submission_id is None and self.assignment_id is None:
+            raise ValueError("必须提供 submission_id 或 assignment_id")
+        return self
 
 
 class LateSubmissionResponse(BaseModel):
     id: int
-    submission_id: int
+    submission_id: Optional[int] = None
+    assignment_id: Optional[int] = None
+    student_id: Optional[int] = None
     reason: str
     status: str
     created_at: datetime
@@ -48,11 +60,14 @@ async def request_late_submission(
     db: AsyncSession = Depends(get_db),
 ):
     late, error = await late_submission_service.create_late_submission(
-        db, data.submission_id, current_user.id, data.reason
+        db,
+        student_id=current_user.id,
+        submission_id=data.submission_id,
+        assignment_id=data.assignment_id,
+        reason=data.reason,
     )
     if error:
-        code = get_error_status(error)
-        raise HTTPException(status_code=code, detail=error)
+        raise HTTPException(status_code=get_error_status(error), detail=error)
     return late
 
 

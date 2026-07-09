@@ -135,12 +135,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 更新文件预览
     var fileNameEl = document.querySelector('.file-preview .file-name');
-    if (fileNameEl) fileNameEl.textContent = sub.file_name || '未知文件';
+    if (fileNameEl) {
+      fileNameEl.innerHTML = '';
+      var a = document.createElement('a');
+      a.href = 'javascript:void(0)';
+      a.style.color = '#58a6ff';
+      a.style.textDecoration = 'underline';
+      a.textContent = sub.file_name || '未知文件';
+      a.onclick = function() {
+        API.download('/submissions/' + sub.id + '/download', sub.file_name || '').catch(function(err) {
+          showToast('下载失败: ' + (err.message || '未知错误'), 'error');
+        });
+      };
+      fileNameEl.appendChild(a);
+    }
 
     var fileMetaEl = document.querySelector('.file-preview .file-meta');
     if (fileMetaEl) {
       var submitTime = sub.submitted_at ? formatTime(sub.submitted_at) : '';
-      fileMetaEl.textContent = (sub.file_path || '') + ' · 提交于 ' + submitTime;
+      fileMetaEl.textContent = '提交于 ' + submitTime;
     }
 
     // 重置输入

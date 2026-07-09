@@ -23,6 +23,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
+    // 重新提交文件选择器
+    var resubmitInput = document.getElementById('resubmit-file-input');
+    if (resubmitInput) {
+        resubmitInput.addEventListener('change', function() {
+            var f = this.files && this.files[0];
+            var subId = parseInt(this.getAttribute('data-sub-id'));
+            if (f && subId) {
+                doResubmit(subId, f, window._currentAssignment);
+            }
+            this.value = '';
+        });
+    }
+
     loadAssignmentDetail(assignmentId);
 });
 
@@ -40,6 +53,7 @@ function loadAssignmentDetail(id) {
             document.getElementById('assignment-detail-card').innerHTML = '<div style="padding:40px;text-align:center">作业不存在</div>';
             return;
         }
+        window._currentAssignment = assignment;
 
         // 找到课程名
         var courseMap = {};
@@ -58,22 +72,22 @@ function loadAssignmentDetail(id) {
         renderDetailCard(assignment, courseName, mySubmission);
 
         // 显示/隐藏提交区域
-        if (!mySubmission) {
-            var isOverdue = assignment.deadline && parseCST(assignment.deadline) < cstNow();
-            if (!isOverdue) {
-                document.getElementById('submit-section').style.display = '';
-                // 更新文件格式提示
-                var hint = document.getElementById('upload-hint');
-                if (hint && assignment.attachments) {
-                    hint.textContent = '支持: ' + assignment.attachments;
-                }
-                bindSubmitEvents(id, assignment);
+        var isOverdue = assignment.deadline && parseCST(assignment.deadline) < cstNow();
+        if (!mySubmission && !isOverdue) {
+            document.getElementById('submit-section').style.display = '';
+            // 更新文件格式提示
+            var hint = document.getElementById('upload-hint');
+            if (hint) {
+                var exts = assignment.attachments || '.cpp,.c,.java,.py,.zip';
+                var size = assignment.max_file_size_mb || 50;
+                hint.textContent = '支持: ' + exts + ' · 单文件 ≤ ' + size + ' MB';
             }
+            bindSubmitEvents(id, assignment);
         }
 
         // 显示提交记录
         if (mySubmission) {
-            renderSubmissionRecord(mySubmission);
+            renderSubmissionRecord(mySubmission, assignment);
         }
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -142,9 +156,10 @@ function renderDetailCard(assignment, courseName, submission) {
         '</div>';
 }
 
-function renderSubmissionRecord(submission) {
+function renderSubmissionRecord(submission, assignment) {
     var section = document.getElementById('submission-record');
     var body = document.getElementById('submission-record-body');
+    var actions = document.getElementById('submission-record-actions');
     section.style.display = '';
 
     var gradeHtml = '';
@@ -167,38 +182,123 @@ function renderSubmissionRecord(submission) {
     body.innerHTML =
         '<div class="detail-record-item">' +
             '<i data-lucide="file" style="width:16px;height:16px"></i>' +
-            '<span>提交文件：<strong>' + escapeHtml(submission.file_name || submission.file_path || '未知文件') + '</strong></span>' +
+            '<span>提交文件：<strong>' + escapeHtml(submission.file_name || '未知文件') + '</strong></span>' +
+            ' <a href="javascript:void(0)" onclick="downloadMySubmission(' + submission.id + ')" ' +
+            '   style="color:#58a6ff;text-decoration:underline;margin-left:8px">下载</a>' +
         '</div>' +
         '<div class="detail-record-item">' +
             '<i data-lucide="clock" style="width:16px;height:16px"></i>' +
             '<span>提交时间：' + parseCST(submission.submitted_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }) + '</span>' +
         '</div>' +
         gradeHtml;
+
+    // 右上角"重新提交"按钮（deadline 未过时显示）
+    if (actions) {
+        var canResubmit = !assignment.deadline || parseCST(assignment.deadline) > cstNow();
+        if (canResubmit) {
+            actions.innerHTML = '<button class="btn btn-secondary" style="font-size:.75rem;padding:5px 12px" ' +
+                                'onclick="triggerResubmit(' + submission.id + ')">重新提交</button>';
+        } else {
+            actions.innerHTML = '';
+        }
+    }
+
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// ===== 下载 =====
+function downloadMySubmission(submissionId) {
+    // 通过全局 assignment 缓存不到 file_name，直接调用 API.get 补一次也可以，
+    // 但为节省一次请求，直接把 filename 交给 API 层的默认值 'download'。
+    API.download('/submissions/' + submissionId + '/download').catch(function(err) {
+        showToast('下载失败: ' + (err.message || '未知错误'), 'error');
+    });
+}
+
+// ===== 重新提交 =====
+function triggerResubmit(submissionId) {
+    var input = document.getElementById('resubmit-file-input');
+    if (!input) return;
+    input.setAttribute('data-sub-id', String(submissionId));
+    input.click();
+}
+
+function doResubmit(submissionId, file, assignment) {
+    if (!validateFileForAssignment(file, assignment)) return;
+    var formData = new FormData();
+    formData.append('file', file);
+
+    showToast('正在上传...', 'success');
+    API.uploadWithProgress('/submissions/' + submissionId, formData, null, 'PUT')
+        .then(function() {
+            showToast('重新提交成功', 'success');
+            setTimeout(function() { location.reload(); }, 700);
+        })
+        .catch(function(err) {
+            showToast('重新提交失败: ' + (err.message || '未知错误'), 'error');
+        });
+}
+
+// ===== 客户端预检 =====
+function validateFileForAssignment(file, assignment) {
+    if (!file) return false;
+    // 大小
+    var maxMb = assignment.max_file_size_mb || 50;
+    if (file.size > maxMb * 1024 * 1024) {
+        showToast('文件大小超过限制 (' + maxMb + ' MB)', 'error');
+        return false;
+    }
+    // 扩展名
+    var name = file.name || '';
+    var dot = name.lastIndexOf('.');
+    var ext = dot >= 0 ? name.substring(dot).toLowerCase() : '';
+    var raw = assignment.attachments || '.cpp,.c,.java,.py,.zip';
+    var allowed = raw.split(',').map(function(e) {
+        e = e.trim().toLowerCase();
+        return e && e.charAt(0) !== '.' ? '.' + e : e;
+    }).filter(Boolean);
+    if (allowed.indexOf(ext) === -1) {
+        showToast('不允许的文件格式: ' + (ext || '(缺少扩展名)'), 'error');
+        return false;
+    }
+    return true;
 }
 
 function bindSubmitEvents(assignmentId, assignment) {
     var fileInput = document.getElementById('detail-file-input');
     var submitBtn = document.getElementById('detail-submit-btn');
+    var progressWrap = document.getElementById('upload-progress-wrap');
+    var progressBar = document.getElementById('upload-progress-bar');
+    var progressText = document.getElementById('upload-progress-text');
 
     submitBtn.addEventListener('click', function() {
         if (!fileInput.files || !fileInput.files[0]) {
             showToast('请先选择文件', 'error');
             return;
         }
+        var file = fileInput.files[0];
+        if (!validateFileForAssignment(file, assignment)) return;
 
         var formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('file', file);
 
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i data-lucide="loader" style="width:16px;height:16px"></i> 上传中...';
+        if (progressWrap) progressWrap.style.display = '';
 
-        API.upload('/submissions/?assignment_id=' + assignmentId, formData).then(function() {
+        API.uploadWithProgress('/submissions/?assignment_id=' + assignmentId, formData, function(pct) {
+            if (progressBar) progressBar.style.width = pct + '%';
+            if (progressText) progressText.textContent = pct + '%';
+        }).then(function() {
             showToast('提交成功！', 'success');
-            setTimeout(function() { location.reload(); }, 1000);
+            setTimeout(function() { location.reload(); }, 800);
         }).catch(function(err) {
             showToast('提交失败: ' + (err.message || '未知错误'), 'error');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i data-lucide="send" style="width:16px;height:16px"></i> 提交作业';
+            if (progressWrap) progressWrap.style.display = 'none';
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressText) progressText.textContent = '0%';
             if (typeof lucide !== 'undefined') lucide.createIcons();
         });
     });
