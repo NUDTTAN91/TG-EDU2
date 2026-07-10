@@ -76,7 +76,7 @@
         <p>选院校 → 输入账号密码 → 完事</p>
       </div>
 
-      <form id="loginForm" onsubmit="return false;">
+      <form id="loginForm" onsubmit="handleLogin();return false;">
         <!-- School -->
         <div class="school-select-group">
           <div class="field-label"><span class="num">1</span> 选择院校</div>
@@ -89,13 +89,13 @@
         <div class="role-group">
           <div class="field-label"><span class="num">2</span> 登录身份</div>
           <div class="role-cards">
-            <button class="role-card selected" onclick="selectRole(this, 'student')">
+            <button type="button" class="role-card selected" onclick="selectRole(this, 'student')">
               <span class="role-emoji"><i data-lucide="graduation-cap"></i></span>学生
             </button>
-            <button class="role-card" onclick="selectRole(this, 'teacher')">
+            <button type="button" class="role-card" onclick="selectRole(this, 'teacher')">
               <span class="role-emoji"><i data-lucide="user"></i></span>教师
             </button>
-            <button class="role-card" onclick="selectRole(this, 'admin')">
+            <button type="button" class="role-card" onclick="selectRole(this, 'admin')">
               <span class="role-emoji"><i data-lucide="shield"></i></span>管理员
             </button>
           </div>
@@ -125,7 +125,7 @@
         <div class="login-error" id="loginError" style="display:none;color:#d4432e;background:rgba(212,67,46,.08);border:1.5px solid #d4432e;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.85rem"></div>
 
         <!-- Submit -->
-        <button type="submit" class="login-btn" id="loginBtn" onclick="handleLogin()">登 录 →</button>
+        <button type="submit" class="login-btn" id="loginBtn">登 录 →</button>
       </form>
 
       <div class="divider">或者</div>
