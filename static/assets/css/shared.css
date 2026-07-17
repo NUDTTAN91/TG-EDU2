@@ -16,7 +16,16 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow: hidden;
+}
+
+/* 中部导航独立滚动区：顶部品牌区与底部用户区固定不滚动（.sidebar-nav 容器由 shared.js 注入） */
+.sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  margin: 0 -16px;
+  padding: 0 16px;
 }
 
 .sidebar-logo {

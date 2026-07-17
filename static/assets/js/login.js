@@ -1,35 +1,3 @@
-var selectedRole = 'student';
-
-// 加载院校列表
-(function loadSchools() {
-  fetch('/api/schools/public/')
-    .then(function(r) { return r.json(); })
-    .then(function(schools) {
-      var select = document.getElementById('schoolSelect');
-      if (!select) return;
-      schools.forEach(function(school) {
-        var opt = document.createElement('option');
-        opt.value = school.id;
-        opt.textContent = school.name;
-        select.appendChild(opt);
-      });
-    })
-    .catch(function(err) {
-      console.error('加载院校列表失败:', err);
-    });
-})();
-
-function selectRole(el, role) {
-  document.querySelectorAll('.role-card').forEach(function(c) { c.classList.remove('selected'); });
-  el.classList.add('selected');
-  selectedRole = role;
-  var input = document.querySelector('input[placeholder*="学号"]');
-  if (input) {
-    if (role === 'admin') input.placeholder = '管理员账号';
-    else input.placeholder = '学号 / 工号';
-  }
-}
-
 function togglePw() {
   var inp = document.getElementById('pwInput');
   var btn = document.querySelector('.pw-toggle');
@@ -85,19 +53,6 @@ function handleLogin() {
   btn.textContent = '登录中…';
 
   Auth.login(username, password).then(function(data) {
-    // 检查前端选择的身份是否与后端返回的角色匹配
-    if (selectedRole && data.user.role !== selectedRole) {
-      showLoginError('账号或密码错误');
-      // 清除已保存的登录状态
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('user');
-      Auth.user = null;
-      API.token = null;
-      btn.disabled = false;
-      btn.textContent = '登 录 →';
-      return;
-    }
-    // 角色匹配成功
     btn.textContent = '✓ 登录成功';
 
     // 检查是否需要强制改密

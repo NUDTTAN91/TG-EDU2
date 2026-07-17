@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from io import BytesIO
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import List, Literal, Optional
@@ -75,6 +77,86 @@ async def import_students(
 ):
     count = await admin_service.import_students(db, students)
     return {"message": f"成功导入 {count} 名学生", "count": count}
+
+
+# ============================================================================
+# 批量导入用户 (xlsx)
+# ============================================================================
+
+MAX_IMPORT_FILE_SIZE = 2 * 1024 * 1024  # 2 MB
+
+
+@router.get("/import-users/template")
+async def download_import_template(
+    current_user: User = Depends(require_role("admin")),
+):
+    """下载用户导入 xlsx 模板。"""
+    try:
+        content = admin_service.build_user_import_template()
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    filename = "user-import-template.xlsx"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "X-Content-Type-Options": "nosniff",
+    }
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers,
+    )
+
+
+@router.post("/import-users", status_code=status.HTTP_200_OK)
+async def import_users(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """批量导入用户（学生 + 教师）。学校名从 xlsx 行内读取，学校/班级不存在将自动创建。"""
+    # 文件扩展名
+    filename = (file.filename or "").strip()
+    if not filename.lower().endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail="文件格式不对，需为 .xlsx")
+
+    # 流式读取并限制大小，避免一次性读入过大文件
+    buf = BytesIO()
+    total = 0
+    chunk_size = 128 * 1024
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_IMPORT_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="文件过大，上限 2 MB")
+        buf.write(chunk)
+    file_bytes = buf.getvalue()
+
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="文件为空")
+
+    try:
+        report = await admin_service.import_users_from_xlsx(db, file_bytes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    ip = request.client.host if request.client else None
+    await log_action(
+        db,
+        action="import_users",
+        category="user_management",
+        user_id=current_user.id,
+        username=current_user.username,
+        detail=(
+            f"批量导入用户 学生{report['created_students']}人 教师{report['created_teachers']}人 "
+            f"新建学校{report['created_schools']}个 新建班级{report['created_classes']}个 "
+            f"跳过{len(report['skipped'])}行"
+        ),
+        ip_address=ip,
+    )
+    return report
 
 
 @router.get("/users")

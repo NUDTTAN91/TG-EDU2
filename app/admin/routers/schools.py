@@ -27,21 +27,8 @@ class SchoolResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SchoolPublicResponse(BaseModel):
-    id: int
-    name: str
-
-
 class SchoolUpdate(BaseModel):
     name: str
-
-
-@router.get("/public/", response_model=List[SchoolPublicResponse])
-async def get_public_schools(db: AsyncSession = Depends(get_db)):
-    """公开接口：无需鉴权，返回所有院校列表（供登录页使用）"""
-    result = await db.execute(select(School).order_by(School.name))
-    schools = result.scalars().all()
-    return [{"id": s.id, "name": s.name} for s in schools]
 
 
 @router.get("/", response_model=List[SchoolResponse])

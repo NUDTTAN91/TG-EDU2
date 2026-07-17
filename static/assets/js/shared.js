@@ -184,6 +184,31 @@ function initAdminOnTeacherPage() {
 /* ===== Common Utilities ===== */
 
 /**
+ * Sidebar layout: top brand area and bottom user area are fixed, middle nav scrolls independently.
+ * Dynamically wraps all content between the top block (.sidebar-role/.sidebar-school/.sidebar-logo)
+ * and .sidebar-bottom into a .sidebar-nav container. Must run after initAdminOnTeacherPage
+ * so that the rebuilt admin sidebar also gets wrapped.
+ */
+function initSidebarLayout() {
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar || sidebar.querySelector('.sidebar-nav')) return;
+  var bottom = sidebar.querySelector('.sidebar-bottom');
+  var top = sidebar.querySelector('.sidebar-role')
+    || sidebar.querySelector('.sidebar-school')
+    || sidebar.querySelector('.sidebar-logo');
+  if (!bottom || !top) return;
+  var nav = document.createElement('div');
+  nav.className = 'sidebar-nav';
+  var node = top.nextSibling;
+  while (node && node !== bottom) {
+    var next = node.nextSibling;
+    nav.appendChild(node);
+    node = next;
+  }
+  sidebar.insertBefore(nav, bottom);
+}
+
+/**
  * HTML-escape a string to prevent XSS
  * @param {string} text
  * @returns {string}
@@ -289,6 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
   injectThemeToggle();
   initScrollReveal();
   initAdminOnTeacherPage();
+  initSidebarLayout();
   initSidebarUser();
   lucide.createIcons();
 });

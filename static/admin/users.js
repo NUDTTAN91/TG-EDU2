@@ -321,5 +321,127 @@
         populateModalSchools(schools);
     }).catch(function() {});
 
+    // ============================================================
+    // 批量导入用户（xlsx）
+    // ============================================================
+    var importOverlay      = document.getElementById('import-modal-overlay');
+    var importFileInput    = document.getElementById('import-modal-file');
+    var importSubmitBtn    = document.getElementById('import-modal-submit');
+    var importCancelBtn    = document.getElementById('import-modal-cancel');
+    var importOpenBtn      = document.getElementById('import-users-btn');
+    var importDlTplBtn     = document.getElementById('import-download-tpl-btn');
+    var importErrorEl      = document.getElementById('import-error');
+    var importResultEl     = document.getElementById('import-result');
+    var importSummaryEl    = document.getElementById('import-result-summary');
+    var importSkippedWrap  = document.getElementById('import-result-skipped-wrap');
+    var importSkippedList  = document.getElementById('import-result-skipped');
+
+    function resetImportModal() {
+        importFileInput.value = '';
+        importErrorEl.style.display = 'none';
+        importErrorEl.textContent = '';
+        importResultEl.style.display = 'none';
+        importSkippedWrap.style.display = 'none';
+        importSkippedList.innerHTML = '';
+        importSummaryEl.textContent = '';
+        importSubmitBtn.disabled = false;
+        importSubmitBtn.textContent = '开始导入';
+    }
+
+    function openImportModal() {
+        resetImportModal();
+        importOverlay.style.display = 'flex';
+    }
+
+    function closeImportModal() {
+        importOverlay.style.display = 'none';
+    }
+
+    function showImportError(msg) {
+        importErrorEl.textContent = msg;
+        importErrorEl.style.display = 'block';
+    }
+
+    if (importOpenBtn) importOpenBtn.addEventListener('click', openImportModal);
+    if (importCancelBtn) importCancelBtn.addEventListener('click', closeImportModal);
+    if (importOverlay) importOverlay.addEventListener('click', function(e) {
+        if (e.target === importOverlay) closeImportModal();
+    });
+
+    if (importDlTplBtn) {
+        importDlTplBtn.addEventListener('click', function() {
+            importDlTplBtn.disabled = true;
+            var origText = importDlTplBtn.innerHTML;
+            importDlTplBtn.textContent = '下载中…';
+            API.download('/admin/import-users/template', 'user-import-template.xlsx')
+                .catch(function(err) {
+                    showImportError('下载模板失败：' + (err.message || '未知错误'));
+                })
+                .then(function() {
+                    importDlTplBtn.disabled = false;
+                    importDlTplBtn.innerHTML = origText;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                });
+        });
+    }
+
+    if (importSubmitBtn) {
+        importSubmitBtn.addEventListener('click', function() {
+            importErrorEl.style.display = 'none';
+            importResultEl.style.display = 'none';
+
+            var file = importFileInput.files && importFileInput.files[0];
+            if (!file) { showImportError('请选择 xlsx 文件'); return; }
+            if (!/\.xlsx$/i.test(file.name)) { showImportError('仅支持 .xlsx 格式'); return; }
+            if (file.size > 2 * 1024 * 1024) { showImportError('文件过大，上限 2 MB'); return; }
+
+            var fd = new FormData();
+            fd.append('file', file);
+
+            importSubmitBtn.disabled = true;
+            importSubmitBtn.textContent = '导入中…';
+            API.upload('/admin/import-users', fd).then(function(report) {
+                var s  = (report && report.created_students) || 0;
+                var t  = (report && report.created_teachers) || 0;
+                var cs = (report && report.created_schools)  || 0;
+                var cc = (report && report.created_classes)  || 0;
+                var skipped = (report && report.skipped) || [];
+                var parts = ['学生 ' + s + ' 人', '教师 ' + t + ' 人'];
+                if (cs) parts.push('新建学校 ' + cs + ' 个');
+                if (cc) parts.push('新建班级 ' + cc + ' 个');
+                if (skipped.length) parts.push('跳过 ' + skipped.length + ' 行');
+                importSummaryEl.textContent = '导入完成：' + parts.join('、');
+                importResultEl.style.display = 'block';
+
+                if (skipped.length) {
+                    var html = '';
+                    skipped.forEach(function(item) {
+                        html += '• 第 ' + escapeHtml(String(item.row || '?')) + ' 行' +
+                                (item.username ? '（' + escapeHtml(item.username) + '）' : '') +
+                                '：' + escapeHtml(item.reason || '未知原因') + '<br>';
+                    });
+                    importSkippedList.innerHTML = html;
+                    importSkippedWrap.style.display = 'block';
+                } else {
+                    importSkippedWrap.style.display = 'none';
+                }
+
+                importSubmitBtn.disabled = false;
+                importSubmitBtn.textContent = '开始导入';
+
+                // 刷新列表（保留弹窗展示报告让用户看）
+                loadUsers();
+                // 可能有新学校产生，刷新院校下拉缓存
+                API.get('/schools/').then(function(schools) {
+                    populateModalSchools(schools);
+                }).catch(function() {});
+            }).catch(function(err) {
+                showImportError('导入失败：' + (err.message || '未知错误'));
+                importSubmitBtn.disabled = false;
+                importSubmitBtn.textContent = '开始导入';
+            });
+        });
+    }
+
     loadUsers();
 })();

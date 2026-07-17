@@ -31,7 +31,7 @@
 
       <div class="left-content">
         <h2>登录后就能<br><span class="hl">交作业</span>了</h2>
-        <p>选择你的院校，用统一身份认证登录。学生和老师都可以用。</p>
+        <p>统一身份认证登录，学生和老师都可以用。</p>
       </div>
 
       <div class="left-cards">
@@ -73,41 +73,17 @@
       <div class="login-header">
         <div class="tag"><i data-lucide="circle-check" style="width:14px;height:14px"></i> 系统运行中</div>
         <h1>登录你的账号</h1>
-        <p>选院校 → 输入账号密码 → 完事</p>
+        <p>输入账号密码 → 完事</p>
       </div>
 
       <form id="loginForm" onsubmit="handleLogin();return false;">
-        <!-- School -->
-        <div class="school-select-group">
-          <div class="field-label"><span class="num">1</span> 选择院校</div>
-          <select class="school-select placeholder" id="schoolSelect" onchange="this.classList.toggle('placeholder', !this.value)">
-            <option value="">请选择你的院校…</option>
-          </select>
-        </div>
-
-        <!-- Role -->
-        <div class="role-group">
-          <div class="field-label"><span class="num">2</span> 登录身份</div>
-          <div class="role-cards">
-            <button type="button" class="role-card selected" onclick="selectRole(this, 'student')">
-              <span class="role-emoji"><i data-lucide="graduation-cap"></i></span>学生
-            </button>
-            <button type="button" class="role-card" onclick="selectRole(this, 'teacher')">
-              <span class="role-emoji"><i data-lucide="user"></i></span>教师
-            </button>
-            <button type="button" class="role-card" onclick="selectRole(this, 'admin')">
-              <span class="role-emoji"><i data-lucide="shield"></i></span>管理员
-            </button>
-          </div>
-        </div>
-
         <div class="form-group">
-          <div class="field-label"><span class="num">3</span> 账号</div>
+          <div class="field-label"><span class="num">1</span> 账号</div>
           <input type="text" class="form-input" id="usernameInput" placeholder="学号 / 工号" autocomplete="username">
         </div>
 
         <div class="form-group" style="position:relative;">
-          <div class="field-label"><span class="num">4</span> 密码</div>
+          <div class="field-label"><span class="num">2</span> 密码</div>
           <div class="password-wrap">
             <input type="password" class="form-input" id="pwInput" placeholder="输入密码" autocomplete="current-password">
             <button type="button" class="pw-toggle" onclick="togglePw()"><i data-lucide="eye"></i></button>
