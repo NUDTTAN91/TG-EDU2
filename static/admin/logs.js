@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var html = '<table class="data-table" style="width:100%;border-collapse:collapse;">';
         html += '<thead><tr>';
         html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">时间</th>';
+        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">姓名</th>';
         html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">操作类型</th>';
         html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">操作人</th>';
         html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">详情</th>';
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var categoryLabel = getCategoryLabel(log.category);
             html += '<tr>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;">' + formatDate(log.created_at) + '</td>';
+            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + escapeHtml(log.full_name || '-') + '</td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"><span class="log-tag log-' + log.category + '">' + categoryLabel + '</span></td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.username || '-') + '</td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.detail || '-') + '</td>';

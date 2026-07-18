@@ -4,6 +4,7 @@ from sqlalchemy import select, desc
 from app.database import get_db
 from app.utils.dependencies import require_role
 from app.models.audit_log import AuditLog
+from app.models.user import User
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -17,6 +18,7 @@ class LogResponse(BaseModel):
     category: str
     user_id: Optional[int] = None
     username: Optional[str] = None
+    full_name: Optional[str] = None
     detail: Optional[str] = None
     ip_address: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -32,9 +34,26 @@ async def get_logs(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_role("admin")),
 ):
-    query = select(AuditLog).order_by(desc(AuditLog.created_at))
+    query = (
+        select(AuditLog, User.full_name)
+        .outerjoin(User, AuditLog.user_id == User.id)
+        .order_by(desc(AuditLog.created_at))
+    )
     if category and category != "all":
         query = query.where(AuditLog.category == category)
     query = query.offset((page - 1) * page_size).limit(page_size)
     result = await db.execute(query)
-    return result.scalars().all()
+    return [
+        LogResponse(
+            id=log.id,
+            action=log.action,
+            category=log.category,
+            user_id=log.user_id,
+            username=log.username,
+            full_name=full_name or None,
+            detail=log.detail,
+            ip_address=log.ip_address,
+            created_at=log.created_at,
+        )
+        for log, full_name in result.all()
+    ]
