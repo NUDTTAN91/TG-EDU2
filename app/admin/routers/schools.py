@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from pydantic import BaseModel
@@ -11,6 +11,7 @@ from app.models.course import Course
 from app.models.school_class import Class
 from app.utils.dependencies import get_current_user, require_role
 from app.utils.audit import log_action
+from app.utils.ip_util import get_client_ip
 
 router = APIRouter(prefix="/api/schools", tags=["院校"])
 
@@ -44,6 +45,7 @@ async def list_schools(
 @router.post("/", response_model=SchoolResponse, status_code=status.HTTP_201_CREATED)
 async def create_school(
     school: SchoolCreate,
+    request: Request,
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -66,6 +68,7 @@ async def create_school(
         user_id=current_user.id,
         username=current_user.username,
         detail=f"创建了院校 {school.name}",
+        ip_address=get_client_ip(request),
     )
     return new_school
 
@@ -90,6 +93,7 @@ async def get_school(
 async def update_school(
     school_id: int,
     school: SchoolUpdate,
+    request: Request,
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -111,6 +115,7 @@ async def update_school(
         user_id=current_user.id,
         username=current_user.username,
         detail=f"更新了院校 {school.name}",
+        ip_address=get_client_ip(request),
     )
     return db_school
 
@@ -118,6 +123,7 @@ async def update_school(
 @router.delete("/{school_id}")
 async def delete_school(
     school_id: int,
+    request: Request,
     current_user: User = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db)
 ):
@@ -146,5 +152,6 @@ async def delete_school(
         user_id=current_user.id,
         username=current_user.username,
         detail=f"删除了院校 {school_name}",
+        ip_address=get_client_ip(request),
     )
     return {"message": "院校已删除"}

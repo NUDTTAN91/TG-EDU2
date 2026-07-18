@@ -21,6 +21,7 @@ from app.models.school_class import Class, class_students
 from app.config import settings
 from app.utils.dependencies import get_current_user, require_role
 from app.utils.audit import log_action
+from app.utils.ip_util import get_client_ip
 from app.teacher.services import assignment_service
 from app.student.services import submission_service, late_submission_service
 
@@ -410,7 +411,7 @@ async def resubmit_assignment(
         except OSError:
             pass
 
-    ip = request.client.host if request.client else None
+    ip = get_client_ip(request)
     await log_action(
         db,
         action="resubmit",
@@ -571,7 +572,7 @@ async def grade_submission(
         db, submission, data.grade, data.feedback, current_user.id
     )
 
-    ip = request.client.host if request.client else None
+    ip = get_client_ip(request)
     await log_action(
         db,
         action="grade_submission",

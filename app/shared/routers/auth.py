@@ -11,6 +11,7 @@ from app.models.user import User
 from app.utils.security import verify_password, create_access_token, get_password_hash
 from app.utils.dependencies import get_current_user
 from app.utils.audit import log_action
+from app.utils.ip_util import get_client_ip
 
 router = APIRouter(prefix="/api/auth", tags=["认证"])
 
@@ -55,7 +56,7 @@ async def login(request: LoginRequest, req: Request, db: AsyncSession = Depends(
             detail="账号已被禁用",
         )
     access_token = create_access_token(data={"sub": str(user.id), "role": user.role})
-    ip = req.client.host if req.client else None
+    ip = get_client_ip(req)
     await log_action(
         db,
         action="user_login",

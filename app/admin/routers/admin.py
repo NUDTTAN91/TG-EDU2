@@ -9,6 +9,7 @@ from app.models.user import User
 from app.utils.dependencies import require_role
 from app.admin.services import admin_service
 from app.utils.audit import log_action
+from app.utils.ip_util import get_client_ip
 
 router = APIRouter(prefix="/api/admin", tags=["管理"])
 
@@ -142,7 +143,7 @@ async def import_users(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    ip = request.client.host if request.client else None
+    ip = get_client_ip(request)
     await log_action(
         db,
         action="import_users",
