@@ -280,6 +280,7 @@ class GradeRequest(BaseModel):
 @router.post("/", response_model=SubmissionResponse, status_code=status.HTTP_201_CREATED)
 async def submit_assignment(
     assignment_id: int,
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(require_role("student")),
     db: AsyncSession = Depends(get_db),
@@ -341,6 +342,15 @@ async def submit_assignment(
                 pass
         raise
 
+    await log_action(
+        db,
+        action="submit",
+        category="submission",
+        user_id=current_user.id,
+        username=current_user.username,
+        detail=f"提交了作业 #{assignment.id}",
+        ip_address=get_client_ip(request),
+    )
     return submission
 
 

@@ -94,6 +94,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/change-password")
 async def change_password(
     request: ChangePasswordRequest,
+    req: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -116,6 +117,15 @@ async def change_password(
     current_user.must_change_password = False
     db.add(current_user)
     await db.commit()
+    await log_action(
+        db,
+        action="change_password",
+        category="password",
+        user_id=current_user.id,
+        username=current_user.username,
+        detail=f"用户 {current_user.username} 修改了密码",
+        ip_address=get_client_ip(req),
+    )
     return {"message": "密码修改成功"}
 
 
