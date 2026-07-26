@@ -95,6 +95,7 @@ function loadAllData() {
 
         populateSchoolFilter();
         applyFilters();
+        maybePoll();
     });
 }
 
@@ -155,7 +156,7 @@ function onAssignChange() {
 }
 
 // ===== Filtering & Rendering =====
-function applyFilters() {
+function applyFilters(keepPanel) {
     var schoolId = document.getElementById('schoolFilter').value;
     var courseId = document.getElementById('courseFilter').value;
     var assignId = document.getElementById('assignFilter').value;
@@ -177,6 +178,7 @@ function applyFilters() {
 
     updateStats();
     renderStudentList();
+    if (keepPanel) return;
     // Reset grade panel
     currentSubIndex = -1;
     document.getElementById('gradeEmpty').style.display = '';
@@ -231,6 +233,8 @@ function renderStudentList() {
 
         var statusBg = isGraded ? 'var(--lime)' : 'var(--yellow)';
         var statusText = isGraded ? '已批' : '待批';
+        if (s.status === 'queued') { statusBg = '#ddd'; statusText = '排队中'; }
+        else if (s.status === 'grading') { statusBg = 'var(--sky)'; statusText = 'AI 批改中'; }
 
         // Find index in filteredList for navigation
         var realIndex = filteredList.indexOf(s);
@@ -247,6 +251,7 @@ function renderStudentList() {
             + '<div class="s-right">';
         if (isGraded) html += '<span class="s-score">' + s.grade + '</span>';
         html += '<span class="s-status" style="background:' + statusBg + '">' + statusText + '</span>';
+        if (isGraded && (s.graded_by === null || s.graded_by === undefined)) html += '<span class="s-status" style="background:var(--lavender)">AI</span>';
         html += '</div></div>';
     });
 
@@ -329,6 +334,7 @@ function selectStudent(idx) {
 
     // Re-render lucide icons in grade panel
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    panelDirty = false;
 }
 
 function navigateStudent(dir) {
@@ -360,6 +366,7 @@ function navigateStudent(dir) {
 // ===== Quick Actions =====
 function setScore(val) {
     document.getElementById('scoreInput').value = val;
+    panelDirty = true;
 }
 
 function addComment(text) {
@@ -369,6 +376,7 @@ function addComment(text) {
     } else {
         el.value = text;
     }
+    panelDirty = true;
 }
 
 function submitGrade() {
@@ -447,6 +455,78 @@ function filterStudents(btn, filter) {
     renderStudentList();
 }
 
+// ===== AI 批改队列 =====
+var panelDirty = false; // 教师正在编辑评语/分数时，轮询不覆盖面板
+
+function toast(msg, type) {
+    var existing = document.querySelector('.toast-msg');
+    if (existing) existing.parentNode.removeChild(existing);
+    var t = document.createElement('div');
+    t.className = 'toast-msg';
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);' +
+        'padding:10px 24px;border-radius:8px;font-size:.85rem;z-index:9999;' +
+        'box-shadow:0 4px 12px rgba(0,0,0,.15);transition:opacity .3s;' +
+        (type === 'error' ? 'background:#e07a5f;color:#fff;' : 'background:#3fb950;color:#fff;');
+    document.body.appendChild(t);
+    setTimeout(function () {
+        t.style.opacity = '0';
+        setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+    }, 3000);
+}
+
+function aiEnqueue() {
+    if (currentSubIndex < 0) { toast('请先选择一份提交', 'error'); return; }
+    var s = filteredList[currentSubIndex];
+    if (!s) return;
+    var mode = document.getElementById('aiModeSelect').value;
+    API.post('/ai-grading/' + s.id + '/enqueue?mode=' + mode).then(function () {
+        toast('已加入 AI 批改队列', 'success');
+        silentReload();
+    }).catch(function (err) {
+        toast('入队失败: ' + (err.message || '未知错误'), 'error');
+    });
+}
+
+function aiEnqueueAll() {
+    var mode = document.getElementById('aiModeSelect').value;
+    API.post('/ai-grading/enqueue-pending?mode=' + mode).then(function (r) {
+        toast(r.message || '已入队', 'success');
+        silentReload();
+    }).catch(function (err) {
+        toast('入队失败: ' + (err.message || '未知错误'), 'error');
+    });
+}
+
+var pollTimer = null;
+function hasActiveAi() {
+    return allSubmissions.some(function (s) { return s.status === 'queued' || s.status === 'grading'; });
+}
+function maybePoll() {
+    if (hasActiveAi() && !pollTimer) {
+        pollTimer = setInterval(silentReload, 5000);
+    } else if (!hasActiveAi() && pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+}
+function silentReload() {
+    API.get('/submissions/').then(function (data) {
+        var prev = currentSubIndex >= 0 ? filteredList[currentSubIndex] : null;
+        var prevSnap = prev ? { status: prev.status, grade: prev.grade, feedback: prev.feedback } : null;
+        allSubmissions = data || [];
+        applyFilters(true);
+        // 数据有变化且教师未正在编辑时，自动刷新批改面板（AI 批完立即显示）
+        var cur = currentSubIndex >= 0 ? filteredList[currentSubIndex] : null;
+        if (cur && prevSnap && !panelDirty) {
+            if (prevSnap.status !== cur.status || prevSnap.grade !== cur.grade || prevSnap.feedback !== cur.feedback) {
+                selectStudent(currentSubIndex);
+            }
+        }
+        maybePoll();
+    }).catch(function () {});
+}
+
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', function() {
     if (!Auth.requireRole('admin')) return;
@@ -461,6 +541,10 @@ document.addEventListener('DOMContentLoaded', function() {
         currentSearch = e.target.value;
         renderStudentList();
     });
+
+    // 教师编辑分数/评语时标记 dirty，轮询不覆盖
+    document.getElementById('scoreInput').addEventListener('input', function() { panelDirty = true; });
+    document.getElementById('commentInput').addEventListener('input', function() { panelDirty = true; });
 
     // Ctrl+Enter shortcut
     document.addEventListener('keydown', function(e) {

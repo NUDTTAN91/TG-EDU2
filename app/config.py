@@ -20,6 +20,17 @@ class Settings(BaseSettings):
     AVATAR_DIR: str = "./data/avatars"
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB default
 
+    # AI 批改（小米 MiMo，OpenAI 兼容；.env 可覆盖，作为 DB 设置的兜底默认）
+    AI_BASE_URL: str = "https://token-plan-cn.xiaomimimo.com/v1"
+    AI_API_KEY: str = ""
+    AI_DOC_MODEL: str = "mimo-v2.5"        # pdf/doc/docx 图片路线
+    AI_TEXT_MODEL: str = "mimo-v2.5-pro"   # txt/md 文本路线
+    AI_THINKING: bool = True               # 思维链开关：开=更准更慢
+    AI_DPI: int = 200
+    AI_JPEG_QUALITY: int = 90
+    AI_MAX_PAGES: int = 50
+    AI_TIMEOUT: int = 300
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @model_validator(mode='after')

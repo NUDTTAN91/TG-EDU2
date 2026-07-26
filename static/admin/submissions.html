@@ -124,6 +124,9 @@
       </div>
 
       <div class="grade-actions">
+        <select class="form-select" id="aiModeSelect" style="width:110px"><option value="direct">直接保存</option><option value="review">教师审核</option></select>
+        <button class="btn btn-sky" id="aiGradeBtn" onclick="aiEnqueue()">AI 批改当前</button>
+        <button class="btn btn-secondary" id="aiGradeAllBtn" onclick="aiEnqueueAll()">待批全部入队</button>
         <button class="btn btn-primary" id="submitGradeBtn" onclick="submitGrade()">提交批改 →</button>
         <button class="btn btn-secondary" onclick="skipStudent()">跳过</button>
         <span class="spacer"></span>

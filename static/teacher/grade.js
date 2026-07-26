@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
       updateFilterStats();
       // 默认选中第一个待批改的
       selectFirstPending();
+      maybePoll();
     }).catch(function(err) {
       console.error('加载数据失败:', err);
       showToast('加载提交数据失败，请刷新页面', 'error');
@@ -88,11 +89,18 @@ document.addEventListener('DOMContentLoaded', function() {
       html += '<div class="s-meta">' + escapeHtml(assignTitle) + ' · ' + escapeHtml(timeStr) + ' · ' + escapeHtml(ext) + '</div>';
       html += '</div>';
       html += '<div class="s-right">';
-      if (isGraded) {
+      if (s.status === 'queued') {
+        html += '<span class="s-status" style="background:#ddd">排队中</span>';
+      } else if (s.status === 'grading') {
+        html += '<span class="s-status" style="background:var(--sky)">AI 批改中</span>';
+      } else if (isGraded) {
         html += '<span class="s-score">' + s.grade + '</span>';
         html += '<span class="s-status" style="background:var(--lime)">已批</span>';
       } else {
         html += '<span class="s-status" style="background:var(--yellow)">待批</span>';
+      }
+      if (isGraded && (s.graded_by === null || s.graded_by === undefined)) {
+        html += '<span class="s-status" style="background:var(--lavender)">AI</span>';
       }
       html += '</div>';
       html += '</div>';
@@ -170,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.style.background = '';
       btn.disabled = false;
     }
+    panelDirty = false;
   }
 
   // 选择第一个待批改
@@ -223,12 +232,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // 设置分数 - 全局函数
   window.setScore = function(val) {
     document.getElementById('scoreInput').value = val;
+    panelDirty = true;
   };
 
   // 添加评语 - 全局函数
   window.addComment = function(text) {
     var ta = document.getElementById('commentInput');
     ta.value = ta.value ? ta.value + '\n' + text : text;
+    panelDirty = true;
   };
 
   // 提交批改 - 全局函数
@@ -310,10 +321,76 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFilterStats();
   };
 
+  // ===== AI 批改队列 =====
+  var panelDirty = false; // 教师正在编辑评语/分数时，轮询不覆盖面板
+  window.aiEnqueue = function() {
+    if (!currentSubmissionId) { showToast('请先选择一份提交', 'error'); return; }
+    var mode = document.getElementById('aiModeSelect').value;
+    API.post('/ai-grading/' + currentSubmissionId + '/enqueue?mode=' + mode).then(function() {
+      showToast('已加入 AI 批改队列', 'success');
+      loadData();
+    }).catch(function(err) {
+      showToast('入队失败: ' + (err.message || '未知错误'), 'error');
+    });
+  };
+
+  window.aiEnqueueAll = function() {
+    var mode = document.getElementById('aiModeSelect').value;
+    API.post('/ai-grading/enqueue-pending?mode=' + mode).then(function(r) {
+      showToast(r.message || '已入队', 'success');
+      loadData();
+    }).catch(function(err) {
+      showToast('入队失败: ' + (err.message || '未知错误'), 'error');
+    });
+  };
+
+  var pollTimer = null;
+  function hasActiveAi() {
+    return allSubmissions.some(function(s) { return s.status === 'queued' || s.status === 'grading'; });
+  }
+  function maybePoll() {
+    if (hasActiveAi() && !pollTimer) {
+      pollTimer = setInterval(silentReload, 5000);
+    } else if (!hasActiveAi() && pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  }
+  function silentReload() {
+    API.get('/submissions/').then(function(data) {
+      var prev = null;
+      if (currentSubmissionId) {
+        for (var j = 0; j < allSubmissions.length; j++) {
+          if (allSubmissions[j].id === currentSubmissionId) { prev = allSubmissions[j]; break; }
+        }
+      }
+      allSubmissions = data || [];
+      renderSubmissionList();
+      updateFilterStats();
+      // 数据有变化且教师未正在编辑时，自动刷新批改区（AI 批完立即显示）
+      if (currentSubmissionId && !panelDirty) {
+        for (var i = 0; i < allSubmissions.length; i++) {
+          var nw = allSubmissions[i];
+          if (nw.id === currentSubmissionId) {
+            if (!prev || prev.status !== nw.status || prev.grade !== nw.grade || prev.feedback !== nw.feedback) {
+              updateGradeArea(currentSubmissionId);
+            }
+            break;
+          }
+        }
+      }
+      maybePoll();
+    }).catch(function() {});
+  }
+
   // 键盘快捷键
   document.addEventListener('keydown', function(e) {
     if (e.ctrlKey && e.key === 'Enter') window.submitGrade();
   });
+
+  // 教师编辑分数/评语时标记 dirty，轮询不覆盖
+  document.getElementById('scoreInput').addEventListener('input', function() { panelDirty = true; });
+  document.getElementById('commentInput').addEventListener('input', function() { panelDirty = true; });
 
   // 解析CST时间
   function parseCST(dateStr) {

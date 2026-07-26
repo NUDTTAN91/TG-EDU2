@@ -262,3 +262,32 @@ async def init_db():
                 connection.execute(text("PRAGMA foreign_keys=ON"))
 
         await conn.run_sync(_migrate_late_submissions)
+
+    # 为 submissions 表添加 AI 批改队列字段（幂等）
+    async with engine.begin() as conn:
+        def _migrate_submission_queue(connection):
+            from sqlalchemy import inspect, text
+            insp = inspect(connection)
+            if "submissions" not in insp.get_table_names():
+                return
+            cols = [c["name"] for c in insp.get_columns("submissions")]
+            if "queued_at" not in cols:
+                connection.execute(text("ALTER TABLE submissions ADD COLUMN queued_at DATETIME"))
+            if "ai_mode" not in cols:
+                connection.execute(text("ALTER TABLE submissions ADD COLUMN ai_mode VARCHAR(10)"))
+
+        await conn.run_sync(_migrate_submission_queue)
+
+    # 清理历史评语中的 AI 标记字样（学生端不得暴露 AI 批改）
+    async with engine.begin() as conn:
+        def _clean_ai_markers(connection):
+            from sqlalchemy import text
+            connection.execute(text(
+                "UPDATE submissions SET feedback = substr(feedback, 8) WHERE feedback LIKE '【AI 批改】%'"
+            ))
+            connection.execute(text(
+                "UPDATE submissions SET feedback = substr(feedback, instr(feedback, char(10)) + 1) "
+                "WHERE feedback LIKE '【AI 建议】%' AND instr(feedback, char(10)) > 0"
+            ))
+
+        await conn.run_sync(_clean_ai_markers)

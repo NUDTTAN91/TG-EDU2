@@ -15,12 +15,14 @@ class Submission(Base):
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     file_path = Column(String(500), nullable=False)
     file_name = Column(String(200), nullable=False)
-    status = Column(String(20), default="submitted")  # submitted / grading / graded
+    status = Column(String(20), default="submitted")  # submitted / queued / grading / graded
     grade = Column(Integer, nullable=True)
     feedback = Column(Text, default="")
     submitted_at = Column(DateTime, default=cst_now)
     graded_at = Column(DateTime, nullable=True)
     graded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    queued_at = Column(DateTime, nullable=True)  # AI 批改入队时间
+    ai_mode = Column(String(10), nullable=True)  # direct / review
 
     assignment = relationship("Assignment", back_populates="submissions")
     student = relationship("User", foreign_keys=[student_id], back_populates="submissions")

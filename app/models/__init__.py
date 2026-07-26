@@ -6,6 +6,7 @@ from app.models.assignment import Assignment
 from app.models.submission import Submission
 from app.models.late_submission import LateSubmission
 from app.models.audit_log import AuditLog
+from app.models.setting import SystemSetting
 
 __all__ = [
     "User",
@@ -16,4 +17,5 @@ __all__ = [
     "Submission",
     "LateSubmission",
     "AuditLog",
+    "SystemSetting",
 ]

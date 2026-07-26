@@ -175,6 +175,9 @@ function loadCourses() {
                             statusHtml =
                                 '<span class="as-score">' + sub.grade + '/100</span>' +
                                 '<span class="as-status st-done"><i data-lucide="check"></i> 已批改</span>';
+                        } else if (sub.status === 'queued' || sub.status === 'grading') {
+                            statusHtml =
+                                '<span class="as-status st-grading"><i data-lucide="refresh-cw"></i> 批改中</span>';
                         } else {
                             statusHtml =
                                 '<span class="as-status st-grading"><i data-lucide="refresh-cw"></i> 已提交</span>';

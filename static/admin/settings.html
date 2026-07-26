@@ -23,7 +23,7 @@
 </aside>
 <main class="main">
 <button class="mobile-menu-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-<div class="topbar"><h1><i data-lucide="wrench"></i> 系统设置</h1><button class="btn btn-primary">保存设置</button></div>
+<div class="topbar"><h1><i data-lucide="wrench"></i> 系统设置</h1><button class="btn btn-primary" id="saveSettingsBtn">保存设置</button></div>
 
 <div class="settings-grid anim">
 <div class="setting-card">
@@ -50,11 +50,22 @@
 <div class="setting-row"><div><div class="setting-label">自动备份</div><div class="setting-desc">每日凌晨3点自动备份</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
 <div class="setting-row"><div><div class="setting-label">备份保留天数</div></div><select class="form-select" style="width:100px"><option>7天</option><option selected>30天</option><option>90天</option></select></div>
 </div>
+<div class="setting-card">
+<h3><i data-lucide="sparkles"></i> AI 批改设置</h3>
+<div class="setting-row"><div><div class="setting-label">API Key</div><div class="setting-desc">小米 MiMo 平台密钥；留空=保留旧值</div></div><div style="display:flex;gap:6px;align-items:center"><input class="form-input" id="aiKeyInput" type="password" style="width:200px" placeholder="未配置"><button class="btn btn-secondary" id="aiKeyEyeBtn" style="padding:6px 10px;box-shadow:none">显示</button></div></div>
+<div class="setting-row"><div><div class="setting-label">API 端点</div><div class="setting-desc">Token Plan 或按量付费地址</div></div><input class="form-input" id="aiBaseUrlInput" style="width:240px"></div>
+<div class="setting-row"><div><div class="setting-label">文档模型（pdf/doc/docx）</div><div class="setting-desc">图片识别模型</div></div><select class="form-select" id="aiDocModelSelect" style="width:150px"><option value="mimo-v2.5">mimo-v2.5</option><option value="mimo-v2.5-pro">mimo-v2.5-pro</option></select></div>
+<div class="setting-row"><div><div class="setting-label">纯文本模型（txt/md）</div></div><select class="form-select" id="aiTextModelSelect" style="width:150px"><option value="mimo-v2.5-pro">mimo-v2.5-pro</option><option value="mimo-v2.5">mimo-v2.5</option></select></div>
+<div class="setting-row"><div><div class="setting-label">思考模式</div><div class="setting-desc">开=更准更慢，关=更快省 token</div></div><div class="toggle on" id="aiThinkingToggle"></div></div>
+<div class="setting-row"><div><div class="setting-label">连通性测试</div><div class="setting-desc">用当前填写内容对两个绑定模型发最小请求</div></div><button class="btn btn-sky" id="aiTestBtn">测试连通性</button></div>
+<div id="aiTestResult" style="font-size:.78rem;color:#666;min-height:20px;padding:4px 0"></div>
+</div>
 </div>
 </main></div>
 <script src="../assets/js/lucide.js"></script>
 <script src="../assets/js/shared.js"></script>
 <script src="../assets/js/api.js"></script>
 <script src="../assets/js/auth.js"></script>
+<script src="settings.js"></script>
 <script>document.addEventListener('DOMContentLoaded', function() { if (!Auth.requireRole('admin')) return; });</script>
 </body></html>

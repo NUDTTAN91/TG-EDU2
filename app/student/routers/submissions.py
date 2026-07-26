@@ -261,6 +261,7 @@ class SubmissionResponse(BaseModel):
     feedback: str = ""
     submitted_at: datetime
     graded_at: Optional[datetime] = None
+    graded_by: Optional[int] = None
     student_name: Optional[str] = None
     username: Optional[str] = None
     avatar: Optional[str] = None
@@ -493,6 +494,7 @@ def _row_to_response(row):
         feedback=row.Submission.feedback,
         submitted_at=row.Submission.submitted_at,
         graded_at=row.Submission.graded_at,
+        graded_by=row.Submission.graded_by,
         student_name=row.full_name or "",
         username=row.username or "",
         avatar=row.avatar or None,

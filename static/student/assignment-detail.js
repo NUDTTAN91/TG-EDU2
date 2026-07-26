@@ -109,6 +109,9 @@ function renderDetailCard(assignment, courseName, submission) {
         if (submission.grade !== null && submission.grade !== undefined) {
             statusClass = 'status-graded';
             statusText = '已批改 ' + submission.grade + '分';
+        } else if (submission.status === 'queued' || submission.status === 'grading') {
+            statusClass = 'status-submitted';
+            statusText = '批改中';
         } else {
             statusClass = 'status-submitted';
             statusText = '已提交';

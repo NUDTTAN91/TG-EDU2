@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
             login: '登录',
             submission: '作业提交',
             password: '密码修改',
+            ai_grading: 'AI 批改',
             user_management: '用户管理',
             system_settings: '系统设置',
             school_management: '院校管理'
