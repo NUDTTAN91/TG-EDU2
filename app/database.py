@@ -291,3 +291,16 @@ async def init_db():
             ))
 
         await conn.run_sync(_clean_ai_markers)
+
+    # 为 assignments 表添加 auto_ai_grade 开关（提交即自动 AI 批改，幂等）
+    async with engine.begin() as conn:
+        def _migrate_auto_ai_grade(connection):
+            from sqlalchemy import inspect, text
+            insp = inspect(connection)
+            if "assignments" not in insp.get_table_names():
+                return
+            cols = [c["name"] for c in insp.get_columns("assignments")]
+            if "auto_ai_grade" not in cols:
+                connection.execute(text("ALTER TABLE assignments ADD COLUMN auto_ai_grade BOOLEAN DEFAULT 0"))
+
+        await conn.run_sync(_migrate_auto_ai_grade)

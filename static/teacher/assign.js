@@ -196,7 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
       title: title,
       description: desc,
       course_id: parseInt(courseId),
-      deadline: deadline ? deadline + ':00' : null
+      deadline: deadline ? deadline + ':00' : null,
+      auto_ai_grade: (document.getElementById('autoAiToggle') || {}).classList
+          ? document.getElementById('autoAiToggle').classList.contains('on')
+          : false
     };
 
     API.post('/assignments/', payload).then(function(result) {

@@ -23,6 +23,7 @@ from app.utils.dependencies import get_current_user, require_role
 from app.utils.audit import log_action
 from app.utils.ip_util import get_client_ip
 from app.teacher.services import assignment_service
+from app.teacher.services.ai_grading_service import SUPPORTED_EXTS as AI_SUPPORTED_EXTS
 from app.student.services import submission_service, late_submission_service
 
 
@@ -352,6 +353,23 @@ async def submit_assignment(
         detail=f"提交了作业 #{assignment.id}",
         ip_address=get_client_ip(request),
     )
+
+    # 提交即自动 AI 批改：作业开关开启 + 格式支持 → 自动入队
+    if getattr(assignment, "auto_ai_grade", False) and file_ext in AI_SUPPORTED_EXTS and os.path.isfile(file_path):
+        submission.status = "queued"
+        submission.queued_at = cst_now()
+        submission.ai_mode = "direct"
+        db.add(submission)
+        await db.commit()
+        await log_action(
+            db,
+            action="ai_enqueue_auto",
+            category="ai_grading",
+            user_id=current_user.id,
+            username=current_user.username,
+            detail=f"提交 #{submission.id} 触发提交即自动 AI 批改",
+            ip_address=get_client_ip(request),
+        )
     return submission
 
 
@@ -432,6 +450,23 @@ async def resubmit_assignment(
         detail=f"重新提交了作业 #{assignment.id} 提交 #{submission.id}",
         ip_address=ip,
     )
+
+    # 重交后重新自动 AI 批改（新文件需重批）
+    if getattr(assignment, "auto_ai_grade", False) and file_ext in AI_SUPPORTED_EXTS and os.path.isfile(new_file_path):
+        submission.status = "queued"
+        submission.queued_at = cst_now()
+        submission.ai_mode = "direct"
+        db.add(submission)
+        await db.commit()
+        await log_action(
+            db,
+            action="ai_enqueue_auto",
+            category="ai_grading",
+            user_id=current_user.id,
+            username=current_user.username,
+            detail=f"重交 #{submission.id} 触发提交即自动 AI 批改",
+            ip_address=get_client_ip(request),
+        )
     return submission
 
 

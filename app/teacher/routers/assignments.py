@@ -22,6 +22,7 @@ class AssignmentCreate(BaseModel):
     deadline: Optional[datetime] = None
     attachments: str = ".cpp,.c,.java,.py,.zip"
     max_file_size_mb: int = 50
+    auto_ai_grade: bool = False
 
     @field_validator("attachments")
     @classmethod
@@ -45,6 +46,7 @@ class AssignmentUpdate(BaseModel):
     deadline: Optional[datetime] = None
     attachments: Optional[str] = None
     max_file_size_mb: Optional[int] = None
+    auto_ai_grade: Optional[bool] = None
 
     @field_validator("attachments")
     @classmethod
@@ -74,6 +76,7 @@ class AssignmentResponse(BaseModel):
     deadline: Optional[datetime] = None
     attachments: str
     max_file_size_mb: int
+    auto_ai_grade: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

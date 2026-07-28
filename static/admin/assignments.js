@@ -329,7 +329,8 @@ function handlePublish() {
         description: desc,
         course_id: parseInt(courseId),
         deadline: deadline ? deadline + ':00' : null,
-        attachments: attachments
+        attachments: attachments,
+        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on')
     };
 
     var btn = document.getElementById('publishBtn');
@@ -418,6 +419,9 @@ function editAssignment(assignId) {
     });
     updateFormatLabel();
 
+    // 回填自动批改开关
+    document.getElementById('autoAiToggle').classList.toggle('on', !!a.auto_ai_grade);
+
     // Cascade: school → classes → course
     var course = allCourses.find(function(c) { return c.id === a.course_id; });
     var schoolId = course ? String(course.school_id || '') : '';
@@ -474,7 +478,8 @@ function saveEditAssignment() {
         description: desc,
         course_id: parseInt(courseId),
         deadline: deadline ? deadline + ':00' : null,
-        attachments: attachments
+        attachments: attachments,
+        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on')
     };
 
     var btn = document.getElementById('publishBtn');

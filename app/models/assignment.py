@@ -1,6 +1,6 @@
 import uuid
 from app.utils.time_util import cst_now
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -16,6 +16,7 @@ class Assignment(Base):
     attachments = Column(String(500), default=".cpp,.c,.java,.py,.zip")
     max_file_size_mb = Column(Integer, default=50)
     folder_name = Column(String(500), nullable=True)
+    auto_ai_grade = Column(Boolean, default=False)  # 提交即自动 AI 批改
     created_at = Column(DateTime, default=cst_now)
     updated_at = Column(DateTime, default=cst_now, onupdate=cst_now)
 
