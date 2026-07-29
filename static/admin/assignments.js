@@ -172,6 +172,7 @@ function onSchoolChange() {
 function onClassSelectionChange() {
     var checkedChips = document.querySelectorAll('#classChips .chip.checked');
     var courseSelect = document.getElementById('courseSelect');
+    var schoolId = document.getElementById('schoolSelect').value;
 
     if (checkedChips.length === 0) {
         courseSelect.innerHTML = '<option value="">请先选择班级</option>';
@@ -179,6 +180,11 @@ function onClassSelectionChange() {
         updatePreview();
         return;
     }
+
+    // 课程候选先限定在当前学校内，避免其他院校的课程串台
+    var schoolCourses = allCourses.filter(function(c) {
+        return String(c.school_id) === schoolId;
+    });
 
     // Collect unique course_ids from selected classes
     var courseIdSet = {};
@@ -189,12 +195,12 @@ function onClassSelectionChange() {
         }
     });
 
-    var filteredCourses = allCourses.filter(function(c) {
+    var filteredCourses = schoolCourses.filter(function(c) {
         return courseIdSet[String(c.id)];
     });
 
-    // If no linked courses found, show all courses as fallback
-    if (filteredCourses.length === 0) filteredCourses = allCourses;
+    // 选中的班级未关联课程时，回退为「该校全部课程」而非全平台课程
+    if (filteredCourses.length === 0) filteredCourses = schoolCourses;
 
     var html = '<option value="">请选择课程</option>';
     filteredCourses.forEach(function(c) {
