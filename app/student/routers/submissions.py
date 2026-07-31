@@ -583,6 +583,53 @@ async def download_submission(
     return response
 
 
+# 可在线预览的扩展名 → MIME（与前端 API.previewExts 白名单保持一致）。
+# 仅收录浏览器可内嵌渲染且不会当作脚本执行的类型；.html/.js/.svg 等本就不在上传白名单内。
+PREVIEW_MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".gif": "image/gif",
+    ".bmp": "image/bmp",
+    ".txt": "text/plain; charset=utf-8",
+    ".md": "text/plain; charset=utf-8",
+}
+
+
+@router.get("/{submission_id}/preview")
+async def preview_submission(
+    submission_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """在线预览：以 inline + 正确 MIME 返回，供前端在新标签页内嵌渲染（如浏览器 PDF 阅读器）。"""
+    submission = await submission_service.get_submission(db, submission_id)
+    if not submission:
+        raise HTTPException(status_code=404, detail="提交不存在")
+    await _authorize_submission_access(db, submission, current_user)
+
+    file_path = submission.file_path
+    if not file_path or not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="文件已丢失")
+
+    ext = os.path.splitext(submission.file_name or file_path)[1].lower()
+    media_type = PREVIEW_MEDIA_TYPES.get(ext)
+    if not media_type:
+        raise HTTPException(status_code=400, detail="该格式不支持在线预览，请下载后查看")
+
+    filename = submission.file_name or os.path.basename(file_path)
+    response = FileResponse(
+        path=file_path,
+        filename=filename,
+        media_type=media_type,
+        content_disposition_type="inline",
+    )
+    # 声明正确 MIME 且禁止嗅探，避免浏览器把内容猜成可执行类型
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 # ============================================================================
 # PUT /api/submissions/{id}/grade  教师批改
 # ============================================================================

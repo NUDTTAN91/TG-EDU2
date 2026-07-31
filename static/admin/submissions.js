@@ -312,14 +312,14 @@ function selectStudent(idx) {
     document.getElementById('fileName').textContent = s.file_name || '未知文件';
     document.getElementById('fileMeta').textContent = '提交于 ' + formatDateTime(s.submitted_at);
 
-    // Click file preview to authenticated download
+    // Click file preview: PDF/图片/文本 → 新标签页在线预览；其余 → 鉴权下载
     var fp = document.getElementById('filePreview');
     if (fp) {
         if (s.id) {
             fp.style.cursor = 'pointer';
             fp.onclick = function() {
-                API.download('/submissions/' + s.id + '/download', s.file_name || '').catch(function(err) {
-                    alert('下载失败: ' + (err.message || '未知错误'));
+                API.openSubmission(s.id, s.file_name || '').catch(function(err) {
+                    alert('打开失败: ' + (err.message || '未知错误'));
                 });
             };
         } else {

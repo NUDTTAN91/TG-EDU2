@@ -151,8 +151,8 @@ document.addEventListener('DOMContentLoaded', function() {
       a.style.textDecoration = 'underline';
       a.textContent = sub.file_name || '未知文件';
       a.onclick = function() {
-        API.download('/submissions/' + sub.id + '/download', sub.file_name || '').catch(function(err) {
-          showToast('下载失败: ' + (err.message || '未知错误'), 'error');
+        API.openSubmission(sub.id, sub.file_name || '').catch(function(err) {
+          showToast('打开失败: ' + (err.message || '未知错误'), 'error');
         });
       };
       fileNameEl.appendChild(a);

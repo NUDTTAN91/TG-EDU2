@@ -145,6 +145,60 @@ var API = {
         });
     },
 
+    // 可在线预览的扩展名（与后端 PREVIEW_MEDIA_TYPES 白名单保持一致）
+    previewExts: { pdf: 1, png: 1, jpg: 1, jpeg: 1, gif: 1, bmp: 1, txt: 1, md: 1 },
+
+    // 在线预览：新标签页内嵌渲染（PDF 走浏览器阅读器，图片/文本直接展示）。
+    // 注意：window.open 必须在点击手势内同步调用，否则会被弹窗拦截，
+    // 因此先同步开一个 about:blank，拉到 blob 后再把新窗口导航过去。
+    preview: function(path) {
+        var self = this;
+        var win = window.open('about:blank', '_blank');
+        if (!win) {
+            return Promise.reject(new Error('浏览器拦截了新窗口，请允许弹窗后重试'));
+        }
+        var headers = {};
+        if (this.token) {
+            headers['Authorization'] = 'Bearer ' + this.token;
+        }
+        return fetch(this.baseURL + path, { method: 'GET', headers: headers }).then(function(response) {
+            if (response.status === 401) {
+                self.token = null;
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+                throw new Error('未授权，请重新登录');
+            }
+            if (!response.ok) {
+                return response.json().then(function(errData) {
+                    throw new Error((errData && errData.detail) || ('预览失败 (' + response.status + ')'));
+                }).catch(function(err) {
+                    if (err && err.message) throw err;
+                    throw new Error('预览失败 (' + response.status + ')');
+                });
+            }
+            return response.blob();
+        }).then(function(blob) {
+            var url = URL.createObjectURL(blob);
+            win.location.href = url;
+            // 新标签页可能延迟分页加载，延迟回收 objectURL；页面关闭后自然释放
+            setTimeout(function() { URL.revokeObjectURL(url); }, 10 * 60 * 1000);
+            return url;
+        }).catch(function(err) {
+            try { win.close(); } catch (e) { /* ignore */ }
+            throw err;
+        });
+    },
+
+    // 提交文件智能打开：可预览格式 → 新标签页在线预览；其余 → 鉴权下载
+    openSubmission: function(submissionId, fileName) {
+        var ext = ((fileName || '').split('.').pop() || '').toLowerCase();
+        if (this.previewExts[ext]) {
+            return this.preview('/submissions/' + submissionId + '/preview');
+        }
+        return this.download('/submissions/' + submissionId + '/download', fileName || '');
+    },
+
     // 鉴权下载：带 Bearer 的 fetch → blob → 触发 <a download> 点击
     download: function(path, filename) {
         var self = this;
