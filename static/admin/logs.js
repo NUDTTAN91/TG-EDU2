@@ -75,11 +75,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         var d = parseCST(dateStr);
+        // 显示到秒：同一分钟内的多条日志（如重交 + 自动 AI 入队）才能看出先后
         return d.getFullYear() + '-'
             + String(d.getMonth() + 1).padStart(2, '0') + '-'
             + String(d.getDate()).padStart(2, '0') + ' '
             + String(d.getHours()).padStart(2, '0') + ':'
-            + String(d.getMinutes()).padStart(2, '0');
+            + String(d.getMinutes()).padStart(2, '0') + ':'
+            + String(d.getSeconds()).padStart(2, '0');
     }
 
     // 过滤按钮事件

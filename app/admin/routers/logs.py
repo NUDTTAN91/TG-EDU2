@@ -37,7 +37,8 @@ async def get_logs(
     query = (
         select(AuditLog, User.full_name)
         .outerjoin(User, AuditLog.user_id == User.id)
-        .order_by(desc(AuditLog.created_at))
+        # 同一微秒/同一秒内的事件用自增 id 做 tie-breaker，保证因果顺序稳定（新在上）
+        .order_by(desc(AuditLog.created_at), desc(AuditLog.id))
     )
     if category and category != "all":
         query = query.where(AuditLog.category == category)

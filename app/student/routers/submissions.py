@@ -350,7 +350,7 @@ async def submit_assignment(
         category="submission",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"提交了作业 #{assignment.id}",
+        detail=f"提交了作业《{assignment.title}》（提交 #{submission.id}）",
         ip_address=get_client_ip(request),
     )
 
@@ -367,7 +367,7 @@ async def submit_assignment(
             category="ai_grading",
             user_id=current_user.id,
             username=current_user.username,
-            detail=f"提交 #{submission.id} 触发提交即自动 AI 批改",
+            detail=f"提交 #{submission.id}（作业《{assignment.title}》）触发提交即自动 AI 批改",
             ip_address=get_client_ip(request),
         )
     return submission
@@ -447,7 +447,7 @@ async def resubmit_assignment(
         category="submission",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"重新提交了作业 #{assignment.id} 提交 #{submission.id}",
+        detail=f"重新提交了作业《{assignment.title}》（提交 #{submission.id}）",
         ip_address=ip,
     )
 
@@ -464,7 +464,7 @@ async def resubmit_assignment(
             category="ai_grading",
             user_id=current_user.id,
             username=current_user.username,
-            detail=f"重交 #{submission.id} 触发提交即自动 AI 批改",
+            detail=f"重交提交 #{submission.id}（作业《{assignment.title}》）触发提交即自动 AI 批改",
             ip_address=get_client_ip(request),
         )
     return submission

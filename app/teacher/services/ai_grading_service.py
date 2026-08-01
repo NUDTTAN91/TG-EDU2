@@ -228,6 +228,15 @@ async def _audit(db, action: str, detail: str):
     await log_action(db, action=action, category="ai_grading", detail=detail)
 
 
+async def _student_label(db, student_id: int) -> str:
+    """审计详情用的学生标识：姓名（学号）；查不到时回退为用户#id。"""
+    from app.models.user import User
+    u = (await db.execute(select(User).where(User.id == student_id))).scalar_one_or_none()
+    if not u:
+        return f"用户#{student_id}"
+    return f"{u.full_name or u.username}（{u.username}）"
+
+
 async def process_submission(submission_id: int) -> None:
     """调用方已将状态置为 grading。成功按 ai_mode 落库；失败回退 submitted + 审计。"""
     from app.admin.services import settings_service
@@ -276,8 +285,9 @@ async def process_submission(submission_id: int) -> None:
                 submission.graded_by = None
             db.add(submission)
             await db.commit()
+            who = await _student_label(db, submission.student_id)
             await _audit(db, "ai_grade_done",
-                         f"AI 批改完成提交 #{submission.id}，分数 {result['grade']}（模式 {submission.ai_mode or 'direct'}）")
+                         f"AI 批改完成提交 #{submission.id}（学生 {who}），分数 {result['grade']}（模式 {submission.ai_mode or 'direct'}）")
         except Exception as e:
             logger.exception("AI 批改任务失败")
             try:
@@ -289,6 +299,7 @@ async def process_submission(submission_id: int) -> None:
                     stuck.status = "submitted"
                     db.add(stuck)
                     await db.commit()
-                await _audit(db, "ai_grade_fail", f"AI 批改提交 #{submission_id} 失败：{e}")
+                who = await _student_label(db, stuck.student_id) if stuck else f"用户#{submission_id}"
+                await _audit(db, "ai_grade_fail", f"AI 批改提交 #{submission_id}（学生 {who}）失败：{e}")
             except Exception:
                 logger.exception("AI 批改失败回滚亦失败")
