@@ -38,11 +38,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
         logs.forEach(function(log) {
             var categoryLabel = getCategoryLabel(log.category);
-            html += '<tr>';
+            // 超级管理员操作：优先用后端返回的操作者角色；
+            // 后端镜像未重建（响应无 role 字段）时回退：本系统超管账号唯一，
+            // 用当前登录超管的 username 比对。后端升级后该回退自动失效
+            var roleKnown = !(log.role === null || log.role === undefined);
+            var isAdmin = roleKnown
+                ? log.role === 'admin'
+                : (typeof Auth !== 'undefined' && Auth.user && Auth.user.role === 'admin'
+                    && log.username === Auth.user.username);
+            // AI 自动操作：AI worker 自身产生的日志（无操作人）；
+            // 人工触发的入队日志仍归属触发者，不打 AI 标
+            var isAiAuto = log.category === 'ai_grading'
+                && (log.user_id === null || log.user_id === undefined);
+            var rowClass = isAdmin ? 'log-row-admin' : (isAiAuto ? 'log-row-ai' : '');
+            html += '<tr' + (rowClass ? ' class="' + rowClass + '"' : '') + '>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;">' + formatDate(log.created_at) + '</td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + escapeHtml(log.full_name || '-') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"><span class="log-tag log-' + log.category + '">' + categoryLabel + '</span></td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.username || '-') + '</td>';
+            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"><span class="log-tag log-' + log.category + '">' + categoryLabel + '</span>'
+                + (isAiAuto ? '<span class="log-badge log-badge-ai">AI 自动</span>' : '') + '</td>';
+            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + escapeHtml(log.username || '-')
+                + (isAdmin ? '<span class="log-badge log-badge-admin">超管</span>' : '') + '</td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.detail || '-') + '</td>';
             html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.ip_address || '-') + '</td>';
             html += '</tr>';

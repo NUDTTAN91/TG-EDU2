@@ -19,6 +19,7 @@ class LogResponse(BaseModel):
     user_id: Optional[int] = None
     username: Optional[str] = None
     full_name: Optional[str] = None
+    role: Optional[str] = None
     detail: Optional[str] = None
     ip_address: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -35,7 +36,7 @@ async def get_logs(
     current_user=Depends(require_role("admin")),
 ):
     query = (
-        select(AuditLog, User.full_name)
+        select(AuditLog, User.full_name, User.role)
         .outerjoin(User, AuditLog.user_id == User.id)
         # 同一微秒/同一秒内的事件用自增 id 做 tie-breaker，保证因果顺序稳定（新在上）
         .order_by(desc(AuditLog.created_at), desc(AuditLog.id))
@@ -52,9 +53,10 @@ async def get_logs(
             user_id=log.user_id,
             username=log.username,
             full_name=full_name or None,
+            role=role or None,
             detail=log.detail,
             ip_address=log.ip_address,
             created_at=log.created_at,
         )
-        for log, full_name in result.all()
+        for log, full_name, role in result.all()
     ]

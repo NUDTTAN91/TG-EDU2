@@ -10,9 +10,29 @@
 .log-text strong{font-weight:700}
 .log-meta{font-size:0.72rem;color:#999;margin-top:3px}
 
+/* ===== 操作类型标签（logs.js 输出 log-tag log-<category>） ===== */
+.log-tag{display:inline-block;padding:2px 10px;font-size:0.72rem;font-weight:700;border:1.5px solid var(--ink);border-radius:999px;white-space:nowrap}
+.log-login{background:var(--sky)}
+.log-submission{background:var(--lime)}
+.log-password{background:var(--yellow)}
+.log-ai_grading{background:var(--lavender)}
+.log-user_management{background:var(--pink);color:#fff}
+.log-system_settings{background:#e8e8e8}
+.log-school_management{background:#e8e8e8}
+
+/* ===== 特殊身份标记：超级管理员操作 / AI 自动操作 ===== */
+.log-badge{display:inline-block;margin-left:6px;padding:1px 8px;font-size:0.68rem;font-weight:700;border:1.5px solid var(--ink);border-radius:6px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;vertical-align:1px}
+.log-badge-admin{background:var(--pink);color:#fff}
+.log-badge-ai{background:var(--lavender);color:#1d1d1d}
+tr.log-row-admin td{background:rgba(255,107,157,.07)}
+tr.log-row-ai td{background:rgba(197,179,255,.10)}
+
 /* ===== Dark Mode Overrides ===== */
 [data-theme="dark"] .filter-btn{background:var(--card);border-color:var(--border-light);color:var(--text-muted)}
 [data-theme="dark"] .filter-btn.active{border-color:var(--ink);background:var(--yellow);color:#1d1d1d}
 [data-theme="dark"] .log-item{border-bottom-color:var(--border-lighter)}
 [data-theme="dark"] .log-time{color:var(--text-lighter)}
 [data-theme="dark"] .log-meta{color:var(--text-light)}
+[data-theme="dark"] .log-system_settings,[data-theme="dark"] .log-school_management{background:#3a3a3a;color:#e8e8e8}
+[data-theme="dark"] tr.log-row-admin td{background:rgba(255,107,157,.10)}
+[data-theme="dark"] tr.log-row-ai td{background:rgba(197,179,255,.12)}
