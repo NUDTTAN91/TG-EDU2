@@ -21,6 +21,7 @@ from app.models.school_class import Class, class_students
 from app.config import settings
 from app.utils.dependencies import get_current_user, require_role
 from app.utils.audit import log_action
+from app.utils.audit_label import build_submission_label
 from app.utils.ip_util import get_client_ip
 from app.teacher.services import assignment_service
 from app.teacher.services.ai_grading_service import SUPPORTED_EXTS as AI_SUPPORTED_EXTS
@@ -344,13 +345,14 @@ async def submit_assignment(
                 pass
         raise
 
+    label = await build_submission_label(db, submission, assignment)
     await log_action(
         db,
         action="submit",
         category="submission",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"提交了作业《{assignment.title}》（提交 #{submission.id}）",
+        detail=f"提交作业：{label}",
         ip_address=get_client_ip(request),
     )
 
@@ -367,7 +369,7 @@ async def submit_assignment(
             category="ai_grading",
             user_id=current_user.id,
             username=current_user.username,
-            detail=f"提交 #{submission.id}（作业《{assignment.title}》）触发提交即自动 AI 批改",
+            detail=f"提交即自动 AI 批改：{label}",
             ip_address=get_client_ip(request),
         )
     return submission
@@ -441,13 +443,14 @@ async def resubmit_assignment(
             pass
 
     ip = get_client_ip(request)
+    label = await build_submission_label(db, submission, assignment)
     await log_action(
         db,
         action="resubmit",
         category="submission",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"重新提交了作业《{assignment.title}》（提交 #{submission.id}）",
+        detail=f"重新提交作业：{label}",
         ip_address=ip,
     )
 
@@ -464,7 +467,7 @@ async def resubmit_assignment(
             category="ai_grading",
             user_id=current_user.id,
             username=current_user.username,
-            detail=f"重交提交 #{submission.id}（作业《{assignment.title}》）触发提交即自动 AI 批改",
+            detail=f"重交触发提交即自动 AI 批改：{label}",
             ip_address=get_client_ip(request),
         )
     return submission
@@ -667,13 +670,14 @@ async def grade_submission(
     )
 
     ip = get_client_ip(request)
+    label = await build_submission_label(db, submission, assignment)
     await log_action(
         db,
         action="grade_submission",
         category="submission",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"批改了提交 #{submission.id}，分数 {submission.grade}",
+        detail=f"批改作业：{label}，分数 {submission.grade}",
         ip_address=ip,
     )
     return {"message": "评分成功", "submission_id": submission.id, "grade": submission.grade}

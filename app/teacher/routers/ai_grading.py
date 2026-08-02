@@ -9,6 +9,7 @@ from app.models.course import Course
 from app.models.submission import Submission
 from app.models.user import User
 from app.utils.audit import log_action
+from app.utils.audit_label import build_submission_label
 from app.utils.dependencies import require_role
 from app.utils.ip_util import get_client_ip
 from app.utils.time_util import cst_now
@@ -107,13 +108,14 @@ async def enqueue(
     submission.ai_mode = mode
     db.add(submission)
     await db.commit()
+    label = await build_submission_label(db, submission, assignment)
     await log_action(
         db,
         action="ai_enqueue",
         category="ai_grading",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"入队提交 #{submission.id} 进入 AI 批改（模式 {mode}）",
+        detail=f"入队进入 AI 批改：{label}（模式 {mode}）",
         ip_address=get_client_ip(request),
     )
     return {"message": "已入队", "submission_id": submission.id}
