@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderLogs(logs) {
         var container = document.getElementById('log-list');
+        // 列宽策略：除详情外各列用 .log-col-fit 收缩到内容宽，
+        // 剩余宽度全部留给 .log-col-detail（详情），详情内自动换行
+        var thFit = 'class="log-col-fit" style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;"';
+        var thDetail = 'class="log-col-detail" style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;"';
+        var tdFit = 'class="log-col-fit" style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"';
+        var tdDetail = 'class="log-col-detail" style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"';
         if (!logs || logs.length === 0) {
             container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#999">'
                 + '<div style="font-size:1rem;margin-bottom:6px">暂无操作日志数据</div>'
@@ -28,14 +34,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var html = '<table class="data-table" style="width:100%;border-collapse:collapse;">';
         html += '<thead><tr>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">时间</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">姓名</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">班级</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">学校</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">操作类型</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">操作人</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">详情</th>';
-        html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #eee;">IP地址</th>';
+        html += '<th ' + thFit + '>时间</th>';
+        html += '<th ' + thFit + '>姓名</th>';
+        html += '<th ' + thFit + '>班级</th>';
+        html += '<th ' + thFit + '>学校</th>';
+        html += '<th ' + thFit + '>操作类型</th>';
+        html += '<th ' + thFit + '>操作人</th>';
+        html += '<th ' + thDetail + '>详情</th>';
+        html += '<th ' + thFit + '>IP地址</th>';
         html += '</tr></thead><tbody>';
 
         logs.forEach(function(log) {
@@ -54,16 +60,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 && (log.user_id === null || log.user_id === undefined);
             var rowClass = isAdmin ? 'log-row-admin' : (isAiAuto ? 'log-row-ai' : '');
             html += '<tr' + (rowClass ? ' class="' + rowClass + '"' : '') + '>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;">' + formatDate(log.created_at) + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + escapeHtml(log.full_name || '-') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;">' + escapeHtml(log.class_name || '-') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;white-space:nowrap;">' + escapeHtml(log.school_name || '-') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;"><span class="log-tag log-' + log.category + '">' + categoryLabel + '</span>'
+            html += '<td ' + tdFit + '>' + formatDate(log.created_at) + '</td>';
+            html += '<td ' + tdFit + '>' + escapeHtml(log.full_name || '-') + '</td>';
+            html += '<td ' + tdFit + '>' + escapeHtml(log.class_name || '-') + '</td>';
+            html += '<td ' + tdFit + '>' + escapeHtml(log.school_name || '-') + '</td>';
+            html += '<td ' + tdFit + '><span class="log-tag log-' + log.category + '">' + categoryLabel + '</span>'
                 + (isAiAuto ? '<span class="log-badge log-badge-ai">AI 自动</span>' : '') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + escapeHtml(log.username || '-')
+            html += '<td ' + tdFit + '>' + escapeHtml(log.username || '-')
                 + (isAdmin ? '<span class="log-badge log-badge-admin">超管</span>' : '') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.detail || '-') + '</td>';
-            html += '<td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">' + (log.ip_address || '-') + '</td>';
+            html += '<td ' + tdDetail + '>' + escapeHtml(log.detail || '-') + '</td>';
+            html += '<td ' + tdFit + '>' + (log.ip_address || '-') + '</td>';
             html += '</tr>';
         });
 

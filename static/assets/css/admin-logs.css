@@ -27,6 +27,13 @@
 tr.log-row-admin td{background:rgba(255,107,157,.07)}
 tr.log-row-ai td{background:rgba(197,179,255,.10)}
 
+/* ===== 日志表列宽策略 =====
+   除详情外各列：width:1% + nowrap → 收缩到内容宽（自动列宽）；
+   详情列：不设宽 → 吃掉全部剩余宽度，内容装不下时自动换行 */
+#log-list table{table-layout:auto}
+.log-col-fit{width:1%;white-space:nowrap}
+.log-col-detail{width:auto;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+
 /* ===== Dark Mode Overrides ===== */
 [data-theme="dark"] .filter-btn{background:var(--card);border-color:var(--border-light);color:var(--text-muted)}
 [data-theme="dark"] .filter-btn.active{border-color:var(--ink);background:var(--yellow);color:#1d1d1d}
