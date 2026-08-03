@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from app.database import get_db
 from app.utils.dependencies import require_role
 from app.models.audit_log import AuditLog
@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.school import School
 from app.models.school_class import Class, class_students
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
 router = APIRouter(prefix="/api/admin/logs", tags=["审计日志"])
@@ -31,7 +31,7 @@ class LogResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-@router.get("/", response_model=List[LogResponse])
+@router.get("/")
 async def get_logs(
     category: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
@@ -39,6 +39,12 @@ async def get_logs(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_role("admin")),
 ):
+    # 总数单独查一次，供前端翻页条计算总页数
+    count_q = select(func.count()).select_from(AuditLog)
+    if category and category != "all":
+        count_q = count_q.where(AuditLog.category == category)
+    total = (await db.execute(count_q)).scalar() or 0
+
     query = (
         select(AuditLog, User.full_name, User.role, User.school_id)
         .outerjoin(User, AuditLog.user_id == User.id)
@@ -66,21 +72,26 @@ async def get_logs(
     for uid, cname in class_rows:
         class_map.setdefault(uid, []).append(cname)
 
-    return [
-        LogResponse(
-            id=log.id,
-            action=log.action,
-            category=log.category,
-            user_id=log.user_id,
-            username=log.username,
-            full_name=full_name or None,
-            role=role or None,
-            school_name=school_map.get(school_id) if school_id else None,
-            # 一人多班时用顿号拼接；无班级/无操作者（AI 行）为 None
-            class_name="、".join(class_map.get(log.user_id, [])) or None,
-            detail=log.detail,
-            ip_address=log.ip_address,
-            created_at=log.created_at,
-        )
-        for log, full_name, role, school_id in rows
-    ]
+    return {
+        "items": [
+            LogResponse(
+                id=log.id,
+                action=log.action,
+                category=log.category,
+                user_id=log.user_id,
+                username=log.username,
+                full_name=full_name or None,
+                role=role or None,
+                school_name=school_map.get(school_id) if school_id else None,
+                # 一人多班时用顿号拼接；无班级/无操作者（AI 行）为 None
+                class_name="、".join(class_map.get(log.user_id, [])) or None,
+                detail=log.detail,
+                ip_address=log.ip_address,
+                created_at=log.created_at,
+            )
+            for log, full_name, role, school_id in rows
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+    }

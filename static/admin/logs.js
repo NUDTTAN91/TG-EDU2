@@ -2,19 +2,89 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!Auth.requireRole('admin')) return;
 
     var currentCategory = 'all';
+    var currentPage = 1;
+    var totalCount = 0;
+    var pageSize = 0;               // 0 = 尚未计算；只在首屏与 resize 时重算
+    var singleRowHeight = 44;       // 单行行高（px），渲染后取本页最矮行校准
+    var PAGINATION_RESERVED = 76;   // 翻页条 + 底部留白占用的高度
+    var overflowFixed = false;      // 本次加载是否已做过溢出修正
 
-    function loadLogs(category) {
-        var url = '/admin/logs/?page=1&page_size=100';
-        if (category && category !== 'all') {
-            url += '&category=' + category;
+    function availableHeight() {
+        var table = document.querySelector('#log-list table');
+        var top = table ? table.getBoundingClientRect().top : 220;
+        return window.innerHeight - top - PAGINATION_RESERVED;
+    }
+
+    // 每页条数只跟窗口尺寸有关：按单行行高估算并预留一行给可能换行的详情，
+    // 夹在 [10, 200]（后端 page_size 上限 200）。
+    // 翻页/筛选不重算，保证每页条数与总页数稳定不跳变
+    function computePageSize() {
+        var n = Math.floor(availableHeight() / singleRowHeight) - 1;
+        return Math.max(10, Math.min(200, n));
+    }
+
+    function loadLogs(category, page, recomputeSize) {
+        if (category !== undefined) currentCategory = category;
+        currentPage = page || 1;
+        if (recomputeSize || !pageSize) pageSize = computePageSize();
+        overflowFixed = false;
+        var url = '/admin/logs/?page=' + currentPage + '&page_size=' + pageSize;
+        if (currentCategory && currentCategory !== 'all') {
+            url += '&category=' + currentCategory;
         }
 
-        API.get(url).then(function(logs) {
+        API.get(url).then(function(data) {
+            var logs = (data && data.items) ? data.items : (Array.isArray(data) ? data : []);
+            totalCount = (data && typeof data.total === 'number') ? data.total : logs.length;
             renderLogs(logs);
+            fixOverflow(measureRows());
+            renderPagination();
         }).catch(function(err) {
             document.getElementById('log-list').innerHTML =
                 '<div style="text-align:center;padding:60px 0;color:#e74c3c;"><p>加载失败，请刷新重试</p></div>';
+            renderPagination();
         });
+    }
+
+    // 校准单行行高：取本页最矮行（即未换行行），不被换行行污染；
+    // 返回平均行高供溢出修正估算减量
+    function measureRows() {
+        var rows = document.querySelectorAll('#log-list tbody tr');
+        if (!rows.length) return 0;
+        var min = Infinity, sum = 0;
+        rows.forEach(function(r) {
+            var h = r.getBoundingClientRect().height;
+            if (h < min) min = h;
+            sum += h;
+        });
+        if (min >= 24) singleRowHeight = min;
+        return sum / rows.length;
+    }
+
+    // 渲染后若仍溢出视口（该页换行行特别多），按溢出量减量重拉。
+    // 只减不增：避免条数来回震荡；减量单调收敛，不会死循环
+    function fixOverflow(avgRow) {
+        if (overflowFixed || !avgRow) return;
+        var table = document.querySelector('#log-list table');
+        if (!table) return;
+        var overflow = table.getBoundingClientRect().height - availableHeight();
+        if (overflow <= 4) return;
+        overflowFixed = true;
+        pageSize = Math.max(10, pageSize - Math.ceil(overflow / avgRow));
+        loadLogs(undefined, currentPage, false);
+    }
+
+    function renderPagination() {
+        var bar = document.getElementById('log-pagination');
+        if (!bar) return;
+        var totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        bar.innerHTML =
+            '<button class="btn btn-secondary log-page-btn" id="logPrevBtn"' + (currentPage <= 1 ? ' disabled' : '') + '>‹ 上一页</button>'
+            + '<span class="log-page-info">第 ' + currentPage + ' / ' + totalPages + ' 页 · 每页 ' + pageSize + ' 条 · 共 ' + totalCount + ' 条</span>'
+            + '<button class="btn btn-secondary log-page-btn" id="logNextBtn"' + (currentPage >= totalPages ? ' disabled' : '') + '>下一页 ›</button>';
+        document.getElementById('logPrevBtn').onclick = function() { loadLogs(undefined, currentPage - 1); };
+        document.getElementById('logNextBtn').onclick = function() { loadLogs(undefined, currentPage + 1); };
     }
 
     function renderLogs(logs) {
@@ -116,10 +186,17 @@ document.addEventListener('DOMContentLoaded', function() {
             filterBtns.forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             currentCategory = btn.getAttribute('data-category') || 'all';
-            loadLogs(currentCategory);
+            loadLogs(currentCategory, 1);
         });
     });
 
+    // 窗口尺寸变化 → 重算每页条数并重拉当前页（防抖）
+    var resizeTimer = null;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() { loadLogs(undefined, currentPage, true); }, 250);
+    });
+
     // 初始加载
-    loadLogs('all');
+    loadLogs('all', 1, true);
 });

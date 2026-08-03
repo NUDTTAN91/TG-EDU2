@@ -34,6 +34,11 @@ tr.log-row-ai td{background:rgba(197,179,255,.10)}
 .log-col-fit{width:1%;white-space:nowrap}
 .log-col-detail{width:auto;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
 
+/* ===== 翻页条 ===== */
+.log-pagination{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.log-page-info{font-size:0.8rem;color:#888;font-family:'Space Mono',monospace}
+.log-page-btn[disabled]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none}
+
 /* ===== Dark Mode Overrides ===== */
 [data-theme="dark"] .filter-btn{background:var(--card);border-color:var(--border-light);color:var(--text-muted)}
 [data-theme="dark"] .filter-btn.active{border-color:var(--ink);background:var(--yellow);color:#1d1d1d}
@@ -43,3 +48,4 @@ tr.log-row-ai td{background:rgba(197,179,255,.10)}
 [data-theme="dark"] .log-system_settings,[data-theme="dark"] .log-school_management{background:#3a3a3a;color:#e8e8e8}
 [data-theme="dark"] tr.log-row-admin td{background:rgba(255,107,157,.10)}
 [data-theme="dark"] tr.log-row-ai td{background:rgba(197,179,255,.12)}
+[data-theme="dark"] .log-page-info{color:var(--text-light)}
