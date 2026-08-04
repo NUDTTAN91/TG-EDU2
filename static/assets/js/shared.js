@@ -209,6 +209,50 @@ function initSidebarLayout() {
 }
 
 /**
+ * 侧边栏滚动位置跨页保持 + 激活项保底可见。
+ * .sidebar-nav 是独立滚动容器，整页跳转后 scrollTop 重置为 0：
+ * 从靠下的菜单（如操作日志）点去别的页（含表格内「查看」这类
+ * window.location 跳转），侧边栏会跳回顶部，想再点底部菜单得重新滑。
+ * 这里用 sessionStorage 记住滚动位置，落地后先恢复；
+ * 若当前页激活项因此不在可视区，再最小幅度滚动把它露出来。
+ */
+function initSidebarActiveScroll() {
+  // 等两帧：确保 .sidebar-nav 已注入且 CSS 布局完成，取到的高度才准
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      var nav = document.querySelector('.sidebar-nav');
+      if (!nav) return;
+      var saved = 0;
+      try { saved = parseInt(sessionStorage.getItem('sidebarNavScroll') || '0', 10) || 0; } catch (e) { saved = 0; }
+      nav.scrollTop = saved;
+      var active = document.querySelector('.side-link.active');
+      if (!active) return;
+      var navRect = nav.getBoundingClientRect();
+      var aRect = active.getBoundingClientRect();
+      // 激活项被藏住时最小幅度滚动露出（不强制居中，避免跳动）
+      if (aRect.top < navRect.top) nav.scrollTop -= (navRect.top - aRect.top) + 8;
+      else if (aRect.bottom > navRect.bottom) nav.scrollTop += (aRect.bottom - navRect.bottom) + 8;
+    });
+  });
+}
+
+/**
+ * 监听 .sidebar-nav 滚动，节流后把位置写入 sessionStorage 供下一页恢复
+ */
+function bindSidebarScrollPersist() {
+  var nav = document.querySelector('.sidebar-nav');
+  if (!nav) return;
+  var timer = null;
+  nav.addEventListener('scroll', function () {
+    if (timer) return;
+    timer = setTimeout(function () {
+      timer = null;
+      try { sessionStorage.setItem('sidebarNavScroll', String(Math.round(nav.scrollTop))); } catch (e) { /* ignore */ }
+    }, 120);
+  }, { passive: true });
+}
+
+/**
  * HTML-escape a string to prevent XSS
  * @param {string} text
  * @returns {string}
@@ -315,6 +359,8 @@ document.addEventListener('DOMContentLoaded', function () {
   initScrollReveal();
   initAdminOnTeacherPage();
   initSidebarLayout();
+  initSidebarActiveScroll();
+  bindSidebarScrollPersist();
   initSidebarUser();
   lucide.createIcons();
 });
