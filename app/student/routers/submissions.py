@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Request, status
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func, text, desc
 from pydantic import BaseModel, Field
 from typing import Optional, Set, Tuple
 from datetime import datetime
@@ -487,7 +487,7 @@ async def list_submissions(
 ):
     base_query = select(Submission, User.username, User.full_name, User.avatar).join(
         User, Submission.student_id == User.id
-    )
+    ).order_by(desc(Submission.submitted_at), desc(Submission.id))
     if assignment_id:
         base_query = base_query.where(Submission.assignment_id == assignment_id)
 
