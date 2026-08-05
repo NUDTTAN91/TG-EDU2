@@ -59,7 +59,7 @@ function loadAllData() {
 // ===== Cascading Filters =====
 function populateSchoolFilter() {
     var el = document.getElementById('schoolSel');
-    var html = '<option value="">全部院校</option>';
+    var html = '<option value="">请选择院校</option>';
     allSchools.forEach(function(s) {
         html += '<option value="' + s.id + '">' + escapeHtml(s.name) + '</option>';
     });
@@ -84,7 +84,7 @@ function populateClassFilter() {
     var el = document.getElementById('classSel');
     var schoolId = document.getElementById('schoolSel').value;
     var courseId = document.getElementById('courseSel').value;
-    var html = '<option value="">全部班级</option>';
+    var html = '<option value="">请选择班级</option>';
     var classes = allClasses.filter(function(c) {
         if (schoolId && String(c.school_id) !== String(schoolId)) return false;
         if (courseId && c.course_id && String(c.course_id) !== String(courseId)) return false;
@@ -120,16 +120,26 @@ function applyFilters() {
     var courseId = document.getElementById('courseSel').value;
     var classId = document.getElementById('classSel').value;
 
-    // Get relevant course IDs
+    // 必须先选院校 + 班级才展示成绩：
+    // 默认「全部」会把不同院校/班级的课程与提交混进同一张矩阵
+    if (!schoolId || !classId) {
+        filteredAssignments = [];
+        filteredStudents = {};
+        matrixData = {};
+        renderSummary();
+        renderTableView();
+        renderCardView();
+        return;
+    }
+
+    // Get relevant course IDs（限定在所选院校内）
     var courseIds = [];
     if (courseId) {
         courseIds = [parseInt(courseId)];
-    } else if (schoolId) {
+    } else {
         allCourses.forEach(function(c) {
             if (String(c.school_id) === String(schoolId)) courseIds.push(c.id);
         });
-    } else {
-        allCourses.forEach(function(c) { courseIds.push(c.id); });
     }
 
     // Filter assignments by course
@@ -139,73 +149,38 @@ function applyFilters() {
         return parseCST(a.created_at) - parseCST(b.created_at);
     });
 
-    // Get relevant class IDs for student lookup
-    var classIds = [];
-    if (classId) {
-        classIds = [parseInt(classId)];
-    } else {
-        allClasses.forEach(function(c) {
-            var match = true;
-            if (schoolId && String(c.school_id) !== String(schoolId)) match = false;
-            if (courseId && c.course_id && String(c.course_id) !== String(courseId)) match = false;
-            if (match) classIds.push(c.id);
-        });
-    }
-
-    // Get assignment IDs for the filtered set
     var assignIds = filteredAssignments.map(function(a) { return a.id; });
 
-    // Filter submissions for these assignments
-    var relevantSubs = allSubmissions.filter(function(s) {
-        return assignIds.indexOf(s.assignment_id) !== -1;
-    });
-
-    // Build student map from submissions
-    filteredStudents = {};
-    relevantSubs.forEach(function(s) {
-        if (!filteredStudents[s.student_id]) {
-            filteredStudents[s.student_id] = {
-                id: s.student_id,
-                name: s.student_name || s.username || ('学生 ' + s.student_id)
+    // 以所选班级花名册为学生基准：未提交的学生也占一行（显示缺交/—），
+    // 且非本班学生的提交不会串进本矩阵
+    API.get('/classes/' + classId + '/students').then(function(roster) {
+        filteredStudents = {};
+        (roster || []).forEach(function(s) {
+            filteredStudents[s.id] = {
+                id: s.id,
+                name: s.full_name || s.username || ('学生 ' + s.id)
             };
-        }
-    });
-
-    // Build matrix: student_id -> assignment_id -> submission data
-    matrixData = {};
-    relevantSubs.forEach(function(s) {
-        if (!matrixData[s.student_id]) matrixData[s.student_id] = {};
-        matrixData[s.student_id][s.assignment_id] = s;
-    });
-
-    // If a specific class is selected, fetch its students and filter
-    if (classIds.length > 0 && classId) {
-        var classStudentIds = {};
-        var fetchPromises = classIds.map(function(cid) {
-            return API.get('/classes/' + cid + '/students').then(function(students) {
-                students.forEach(function(s) { classStudentIds[s.id] = s; });
-            }).catch(function() { return []; });
         });
-        Promise.all(fetchPromises).then(function() {
-            if (Object.keys(classStudentIds).length > 0) {
-                var filtered = {};
-                for (var sid in filteredStudents) {
-                    if (classStudentIds[parseInt(sid)]) {
-                        filtered[sid] = filteredStudents[sid];
-                    }
-                }
-                filteredStudents = filtered;
-            }
-            renderSummary();
-            renderTableView();
-            renderCardView();
-        });
-        return; // async rendering
-    }
 
-    renderSummary();
-    renderTableView();
-    renderCardView();
+        // Build matrix: student_id -> assignment_id -> submission data
+        matrixData = {};
+        allSubmissions.forEach(function(s) {
+            if (assignIds.indexOf(s.assignment_id) === -1) return;
+            if (!filteredStudents[s.student_id]) return;
+            if (!matrixData[s.student_id]) matrixData[s.student_id] = {};
+            matrixData[s.student_id][s.assignment_id] = s;
+        });
+
+        renderSummary();
+        renderTableView();
+        renderCardView();
+    }).catch(function() {
+        filteredStudents = {};
+        matrixData = {};
+        renderSummary();
+        renderTableView();
+        renderCardView();
+    });
 }
 
 // ===== Statistics =====
@@ -281,7 +256,10 @@ function renderTableView() {
 
     if (studentIds.length === 0 || filteredAssignments.length === 0) {
         var colspan = filteredAssignments.length + 2;
-        bodyHtml = '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:#999;font-size:0.85rem">暂无成绩数据，请选择筛选条件查看</td></tr>';
+        var hint = (!document.getElementById('schoolSel').value || !document.getElementById('classSel').value)
+            ? '请先选择院校和班级，再查看成绩'
+            : '暂无成绩数据';
+        bodyHtml = '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:#999;font-size:0.85rem">' + hint + '</td></tr>';
     } else {
         studentIds.forEach(function(sid) {
             var student = filteredStudents[sid];
