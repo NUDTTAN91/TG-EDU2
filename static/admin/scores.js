@@ -261,10 +261,32 @@ function renderTableView() {
             : '暂无成绩数据';
         bodyHtml = '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:#999;font-size:0.85rem">' + hint + '</td></tr>';
     } else {
-        studentIds.forEach(function(sid) {
-            var student = filteredStudents[sid];
+        // 默认按总分从高到低排：先预算每人总分，
+        // 未有任何成绩的学生排最后，同分按姓名（中文）稳定排序
+        var rows = studentIds.map(function(sid) {
             var total = 0;
             var hasGrade = false;
+            filteredAssignments.forEach(function(a) {
+                var sub = matrixData[sid] ? matrixData[sid][a.id] : null;
+                if (sub && sub.grade !== null && sub.grade !== undefined) {
+                    total += sub.grade;
+                    hasGrade = true;
+                }
+            });
+            return { sid: sid, total: total, hasGrade: hasGrade };
+        });
+        rows.sort(function(x, y) {
+            if (x.hasGrade !== y.hasGrade) return x.hasGrade ? -1 : 1;
+            if (x.total !== y.total) return y.total - x.total;
+            return String(filteredStudents[x.sid].name)
+                .localeCompare(String(filteredStudents[y.sid].name), 'zh-Hans-CN');
+        });
+
+        rows.forEach(function(row) {
+            var sid = row.sid;
+            var student = filteredStudents[sid];
+            var total = row.total;
+            var hasGrade = row.hasGrade;
 
             bodyHtml += '<tr><td class="student-cell">' + escapeHtml(student.name) + '</td>';
 
@@ -272,8 +294,6 @@ function renderTableView() {
                 var sub = matrixData[sid] ? matrixData[sid][a.id] : null;
                 if (sub && sub.grade !== null && sub.grade !== undefined) {
                     var grade = sub.grade;
-                    total += grade;
-                    hasGrade = true;
                     var late = isLateSubmission(sub);
                     var cls = grade >= 80 ? 'high' : (grade >= 60 ? 'mid' : 'low');
                     if (late) {
