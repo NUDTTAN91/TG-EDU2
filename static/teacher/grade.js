@@ -325,8 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var panelDirty = false; // 教师正在编辑评语/分数时，轮询不覆盖面板
   window.aiEnqueue = function() {
     if (!currentSubmissionId) { showToast('请先选择一份提交', 'error'); return; }
-    var mode = document.getElementById('aiModeSelect').value;
-    API.post('/ai-grading/' + currentSubmissionId + '/enqueue?mode=' + mode).then(function() {
+    API.post('/ai-grading/' + currentSubmissionId + '/enqueue').then(function() {
       showToast('已加入 AI 批改队列', 'success');
       loadData();
     }).catch(function(err) {
@@ -335,8 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.aiEnqueueAll = function() {
-    var mode = document.getElementById('aiModeSelect').value;
-    API.post('/ai-grading/enqueue-pending?mode=' + mode).then(function(r) {
+    API.post('/ai-grading/enqueue-pending').then(function(r) {
       showToast(r.message || '已入队', 'success');
       loadData();
     }).catch(function(err) {

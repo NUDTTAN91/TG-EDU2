@@ -479,8 +479,7 @@ function aiEnqueue() {
     if (currentSubIndex < 0) { toast('请先选择一份提交', 'error'); return; }
     var s = filteredList[currentSubIndex];
     if (!s) return;
-    var mode = document.getElementById('aiModeSelect').value;
-    API.post('/ai-grading/' + s.id + '/enqueue?mode=' + mode).then(function () {
+    API.post('/ai-grading/' + s.id + '/enqueue').then(function () {
         toast('已加入 AI 批改队列', 'success');
         silentReload();
     }).catch(function (err) {
@@ -489,8 +488,7 @@ function aiEnqueue() {
 }
 
 function aiEnqueueAll() {
-    var mode = document.getElementById('aiModeSelect').value;
-    API.post('/ai-grading/enqueue-pending?mode=' + mode).then(function (r) {
+    API.post('/ai-grading/enqueue-pending').then(function (r) {
         toast(r.message || '已入队', 'success');
         silentReload();
     }).catch(function (err) {

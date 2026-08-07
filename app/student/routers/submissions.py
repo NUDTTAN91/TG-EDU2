@@ -360,7 +360,7 @@ async def submit_assignment(
     if getattr(assignment, "auto_ai_grade", False) and file_ext in AI_SUPPORTED_EXTS and os.path.isfile(file_path):
         submission.status = "queued"
         submission.queued_at = cst_now()
-        submission.ai_mode = "direct"
+        submission.ai_mode = "review"
         db.add(submission)
         await db.commit()
         await log_action(
@@ -458,7 +458,7 @@ async def resubmit_assignment(
     if getattr(assignment, "auto_ai_grade", False) and file_ext in AI_SUPPORTED_EXTS and os.path.isfile(new_file_path):
         submission.status = "queued"
         submission.queued_at = cst_now()
-        submission.ai_mode = "direct"
+        submission.ai_mode = "review"
         db.add(submission)
         await db.commit()
         await log_action(
@@ -503,6 +503,8 @@ async def list_submissions(
     else:
         filtered_query = base_query.where(Submission.student_id == current_user.id)
 
+    is_student = current_user.role == "student"
+
     # Paginated mode
     if page is not None:
         _page_size = page_size or 20
@@ -511,12 +513,24 @@ async def list_submissions(
         paged = filtered_query.offset((page - 1) * _page_size).limit(_page_size)
         result = await db.execute(paged)
         rows = result.all()
-        items = [_row_to_response(row) for row in rows]
+        items = _mask_unreviewed([_row_to_response(row) for row in rows], is_student)
         return {"items": items, "total": total, "page": page, "page_size": _page_size}
 
     result = await db.execute(filtered_query)
     rows = result.all()
-    return [_row_to_response(row) for row in rows]
+    return _mask_unreviewed([_row_to_response(row) for row in rows], is_student)
+
+
+def _mask_unreviewed(items, is_student: bool):
+    """学生视角：未经人工审核（graded_by 为空，含 AI 草稿与历史 direct 遗留行）
+    的分数与评语不可见；教师/管理员视图不受影响。"""
+    if not is_student:
+        return items
+    for it in items:
+        if it.graded_by is None:
+            it.grade = None
+            it.feedback = ""
+    return items
 
 
 def _row_to_response(row):
@@ -553,7 +567,12 @@ async def get_submission(
     if not submission:
         raise HTTPException(status_code=404, detail="提交不存在")
     await _authorize_submission_access(db, submission, current_user)
-    return submission
+    data = SubmissionResponse.model_validate(submission)
+    if current_user.role == "student" and data.graded_by is None:
+        # 未人工审核的分数/评语（AI 草稿、历史 direct 遗留）对学生不可见
+        data.grade = None
+        data.feedback = ""
+    return data
 
 
 # ============================================================================

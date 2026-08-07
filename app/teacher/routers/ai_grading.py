@@ -1,5 +1,5 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,13 +35,11 @@ def _ext_of(submission: Submission) -> str:
 @router.post("/enqueue-pending")
 async def enqueue_pending(
     request: Request,
-    mode: str = Query("direct"),
     current_user: User = Depends(require_role("admin", "teacher")),
     db: AsyncSession = Depends(get_db),
 ):
-    """把当前教师课程下未批改的提交批量入队（admin 为全平台）。"""
-    if mode not in ("direct", "review"):
-        raise HTTPException(status_code=400, detail="mode 必须为 direct 或 review")
+    """把当前教师课程下未批改的提交批量入队（admin 为全平台）。
+    AI 结果一律为待审核草稿，必须经教师/管理员审核后才应用分数。"""
     query = (
         select(Submission)
         .join(Assignment, Submission.assignment_id == Assignment.id)
@@ -57,7 +55,7 @@ async def enqueue_pending(
             continue
         s.status = "queued"
         s.queued_at = cst_now()
-        s.ai_mode = mode
+        s.ai_mode = "review"
         db.add(s)
         count += 1
     await db.commit()
@@ -67,7 +65,7 @@ async def enqueue_pending(
         category="ai_grading",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"批量入队 {count} 份待批提交进入 AI 批改（模式 {mode}）",
+        detail=f"批量入队 {count} 份待批提交进入 AI 批改（结果待教师审核）",
         ip_address=get_client_ip(request),
     )
     return {"message": f"已入队 {count} 份", "count": count}
@@ -77,12 +75,9 @@ async def enqueue_pending(
 async def enqueue(
     submission_id: int,
     request: Request,
-    mode: str = Query("direct"),
     current_user: User = Depends(require_role("admin", "teacher")),
     db: AsyncSession = Depends(get_db),
 ):
-    if mode not in ("direct", "review"):
-        raise HTTPException(status_code=400, detail="mode 必须为 direct 或 review")
     submission = (await db.execute(
         select(Submission).where(Submission.id == submission_id)
     )).scalar_one_or_none()
@@ -105,7 +100,7 @@ async def enqueue(
 
     submission.status = "queued"
     submission.queued_at = cst_now()
-    submission.ai_mode = mode
+    submission.ai_mode = "review"
     db.add(submission)
     await db.commit()
     label = await build_submission_label(db, submission, assignment)
@@ -115,7 +110,7 @@ async def enqueue(
         category="ai_grading",
         user_id=current_user.id,
         username=current_user.username,
-        detail=f"入队进入 AI 批改：{label}（模式 {mode}）",
+        detail=f"入队进入 AI 批改：{label}（结果待教师审核）",
         ip_address=get_client_ip(request),
     )
     return {"message": "已入队", "submission_id": submission.id}

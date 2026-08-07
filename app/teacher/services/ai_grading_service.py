@@ -20,7 +20,6 @@ from app.models.assignment import Assignment
 from app.models.submission import Submission
 from app.utils.audit import log_action
 from app.utils.audit_label import build_submission_label
-from app.utils.time_util import cst_now
 
 logger = logging.getLogger(__name__)
 
@@ -265,21 +264,15 @@ async def process_submission(submission_id: int) -> None:
             finally:
                 shutil.rmtree(tmp_dir, ignore_errors=True)
 
-            if submission.ai_mode == "review":
-                # 审核模式：只写评语草稿，分数留空待教师确认；不带任何 AI 标记
-                submission.feedback = result["feedback"]
-                submission.status = "submitted"
-            else:
-                submission.grade = result["grade"]
-                submission.feedback = result["feedback"]
-                submission.status = "graded"
-                submission.graded_at = cst_now()
-                submission.graded_by = None
+            # AI 结果一律为待审核草稿：只写评语草稿、分数留空、状态回 submitted，
+            # 由教师/管理员审核并提交批改后才应用分数、学生才可见
+            submission.feedback = result["feedback"]
+            submission.status = "submitted"
             db.add(submission)
             await db.commit()
             label = await build_submission_label(db, submission, assignment)
             await _audit(db, "ai_grade_done",
-                         f"AI 批改完成：{label}，分数 {result['grade']}（模式 {submission.ai_mode or 'direct'}）")
+                         f"AI 批改完成：{label}，建议分数 {result['grade']} 待教师审核")
         except Exception as e:
             logger.exception("AI 批改任务失败")
             try:
