@@ -87,7 +87,8 @@ function populateClassFilter() {
     var html = '<option value="">请选择班级</option>';
     var classes = allClasses.filter(function(c) {
         if (schoolId && String(c.school_id) !== String(schoolId)) return false;
-        if (courseId && c.course_id && String(c.course_id) !== String(courseId)) return false;
+        // 多对多：班级关联集合包含该课程才列入
+        if (courseId && (c.course_ids || []).map(String).indexOf(String(courseId)) === -1) return false;
         return true;
     });
     classes.forEach(function(c) {

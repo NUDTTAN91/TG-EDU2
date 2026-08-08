@@ -127,6 +127,21 @@ function populateCourseFilter() {
 
 // ===== Cascade: School → Class chips → Course =====
 
+// 课程候选 = 该校全部课程并启用下拉。
+// 班级与课程的关联（class.course_id）只作展示参考，不用于收窄候选：
+// 作业最终只绑定 course_id，班级选择不参与提交；且新建课程在未关联
+// 任何班级前（班级数 0）若按班级关联过滤会永远选不到
+function fillSchoolCourses(schoolId) {
+    var courseSelect = document.getElementById('courseSelect');
+    var html = '<option value="">请选择课程</option>';
+    allCourses.forEach(function(c) {
+        if (String(c.school_id) !== String(schoolId)) return;
+        html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+    });
+    courseSelect.innerHTML = html;
+    courseSelect.disabled = false;
+}
+
 function onSchoolChange() {
     var schoolId = document.getElementById('schoolSelect').value;
     var courseSelect = document.getElementById('courseSelect');
@@ -149,7 +164,9 @@ function onSchoolChange() {
 
     var container = document.getElementById('classChips');
     if (schoolClasses.length === 0) {
-        container.innerHTML = '<span style="color:#999;font-size:.85rem;padding:8px">该学校下暂无班级</span>';
+        // 无班级不再阻断布置作业：课程下拉仍可用（BUG-6）
+        container.innerHTML = '<span style="color:#999;font-size:.85rem;padding:8px">该学校下暂无班级（仍可直接选择课程布置作业）</span>';
+        fillSchoolCourses(schoolId);
         updatePreview();
         return;
     }
@@ -157,7 +174,7 @@ function onSchoolChange() {
     var html = '';
     schoolClasses.forEach(function(cls) {
         var count = cls.student_count || 0;
-        html += '<label class="chip" data-class-id="' + cls.id + '" data-course-id="' + (cls.course_id || '') + '" onclick="toggleChip(this)">'
+        html += '<label class="chip" data-class-id="' + cls.id + '" data-course-ids="' + (cls.course_ids || []).join(',') + '" onclick="toggleChip(this)">'
             + '<input type="checkbox">'
             + '<span>' + escapeHtml(cls.name) + '</span>'
             + '<span class="chip-count">' + count + '人</span>'
@@ -181,33 +198,27 @@ function onClassSelectionChange() {
         return;
     }
 
-    // 课程候选先限定在当前学校内，避免其他院校的课程串台
-    var schoolCourses = allCourses.filter(function(c) {
-        return String(c.school_id) === schoolId;
-    });
-
-    // Collect unique course_ids from selected classes
-    var courseIdSet = {};
+    // 课程候选 = 已勾选班级所关联的课程（多对多取并集）
+    var linked = {};
     checkedChips.forEach(function(chip) {
-        var cid = chip.getAttribute('data-course-id');
-        if (cid && cid !== '' && cid !== 'null') {
-            courseIdSet[cid] = true;
-        }
+        (chip.getAttribute('data-course-ids') || '').split(',').forEach(function(x) {
+            if (x !== '') linked[x] = true;
+        });
     });
+    var linkedIds = Object.keys(linked);
 
-    var filteredCourses = schoolCourses.filter(function(c) {
-        return courseIdSet[String(c.id)];
-    });
-
-    // 选中的班级未关联课程时，回退为「该校全部课程」而非全平台课程
-    if (filteredCourses.length === 0) filteredCourses = schoolCourses;
-
-    var html = '<option value="">请选择课程</option>';
-    filteredCourses.forEach(function(c) {
-        html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
-    });
-    courseSelect.innerHTML = html;
-    courseSelect.disabled = false;
+    if (linkedIds.length === 0) {
+        // 勾选的班级尚未关联任何课程 → 回退该校全部课程（保证新课可布置）
+        fillSchoolCourses(schoolId);
+    } else {
+        var html = '<option value="">请选择课程</option>';
+        allCourses.forEach(function(c) {
+            if (!linked[String(c.id)]) return;
+            html += '<option value="' + c.id + '">' + escapeHtml(c.name) + '</option>';
+        });
+        courseSelect.innerHTML = html;
+        courseSelect.disabled = false;
+    }
     updatePreview();
 }
 
@@ -440,8 +451,8 @@ function editAssignment(assignId) {
         setTimeout(function() {
             var chips = document.querySelectorAll('#classChips .chip');
             chips.forEach(function(chip) {
-                var chipCourseId = chip.getAttribute('data-course-id');
-                if (chipCourseId && String(chipCourseId) === String(a.course_id)) {
+                var chipCourseIds = (chip.getAttribute('data-course-ids') || '').split(',');
+                if (chipCourseIds.indexOf(String(a.course_id)) !== -1) {
                     var input = chip.querySelector('input');
                     if (input && !input.checked) {
                         input.checked = true;
@@ -449,13 +460,12 @@ function editAssignment(assignId) {
                     }
                 }
             });
-            onClassSelectionChange(); // enables course select
-
+            // 有勾选班级 → 按关联课程收窄候选；否则回退该校全部课程（未关联课程仍可编辑）
+            var anyChecked = document.querySelectorAll('#classChips .chip.checked').length > 0;
+            if (anyChecked) onClassSelectionChange(); else fillSchoolCourses(schoolId);
             // Now select the course
-            setTimeout(function() {
-                document.getElementById('courseSelect').value = a.course_id || '';
-                updatePreview();
-            }, 50);
+            document.getElementById('courseSelect').value = a.course_id || '';
+            updatePreview();
         }, 50);
     }
 

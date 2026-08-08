@@ -156,15 +156,53 @@
     // ===== 共享数据 =====
     var allSchools = [];
     var allClasses = [];
+    var allCourses = [];
     var schoolMap = {};
+    var courseMap = {};
 
     function loadSharedData() {
-        return Promise.all([API.get('/schools/'), API.get('/classes/')]).then(function(results) {
+        return Promise.all([API.get('/schools/'), API.get('/classes/'), API.get('/courses/')]).then(function(results) {
             allSchools = results[0] || [];
             allClasses = results[1] || [];
+            allCourses = results[2] || [];
             schoolMap = {};
+            courseMap = {};
             allSchools.forEach(function(s) { schoolMap[s.id] = s.name; });
+            allCourses.forEach(function(c) { courseMap[c.id] = c.name; });
         });
+    }
+
+    // 课程选项文本带学校名，避免跨校同名课程歧义（BUG-10）
+    function courseOptionLabel(c) {
+        var sn = schoolMap[c.school_id];
+        return c.name + (sn ? '（' + sn + '）' : '');
+    }
+
+    // 渲染班级弹窗的课程复选框列表（多对多）；schoolId 为空时列全部课程
+    function fillCourseChecks(container, schoolId, selectedIds) {
+        if (!container) return;
+        selectedIds = selectedIds || [];
+        var list = allCourses.filter(function(c) {
+            return !schoolId || String(c.school_id) === String(schoolId);
+        });
+        if (list.length === 0) {
+            container.innerHTML = '<div class="empty">该学校下暂无课程</div>';
+            return;
+        }
+        container.innerHTML = list.map(function(c) {
+            var checked = selectedIds.map(String).indexOf(String(c.id)) !== -1;
+            return '<label><input type="checkbox" value="' + c.id + '"' + (checked ? ' checked' : '') + '>'
+                + '<span>' + escapeHtml(courseOptionLabel(c)) + '</span></label>';
+        }).join('');
+    }
+
+    // 读取复选框选中的课程 id 数组
+    function readCourseChecks(container) {
+        if (!container) return [];
+        return Array.prototype.map.call(
+            container.querySelectorAll('input[type="checkbox"]:checked'),
+            function(i) { return parseInt(i.value, 10); }
+        );
     }
 
     // ===== 班级表格 =====
@@ -185,16 +223,22 @@
         classesWrapper.style.display = '';
         classesTbody.innerHTML = classes.map(function(cls) {
             var schoolName = schoolMap[cls.school_id] || '-';
+            var courseIds = cls.course_ids || [];
+            // 一门课程一行显示
+            var courseNameHtml = courseIds.map(function(id) {
+                return escapeHtml(courseMap[id] || ('课程 ' + id));
+            }).join('<br>') || '-';
             var count = cls.student_count != null ? cls.student_count : '-';
             var date = formatDate(cls.created_at);
             return '<tr>' +
                 '<td>' + escapeHtml(cls.name) + '</td>' +
                 '<td>' + escapeHtml(schoolName) + '</td>' +
+                '<td>' + courseNameHtml + '</td>' +
                 '<td>' + count + '</td>' +
                 '<td>' + date + '</td>' +
                 '<td>' +
                     '<button class="btn btn-secondary btn-sm btn-view-students" data-id="' + cls.id + '" data-name="' + escapeHtml(cls.name) + '">查看学生</button> ' +
-                    '<button class="btn btn-secondary btn-sm btn-edit-class" data-id="' + cls.id + '" data-name="' + escapeHtml(cls.name) + '">编辑</button> ' +
+                    '<button class="btn btn-secondary btn-sm btn-edit-class" data-id="' + cls.id + '" data-name="' + escapeHtml(cls.name) + '" data-courses="' + courseIds.join(',') + '" data-school="' + (cls.school_id || '') + '">编辑</button> ' +
                     '<button class="btn btn-danger btn-sm btn-del-class" data-id="' + cls.id + '" data-name="' + escapeHtml(cls.name) + '">删除</button>' +
                 '</td></tr>';
         }).join('');
@@ -219,7 +263,14 @@
             btn.addEventListener('click', function() { openStudentsModal(btn.getAttribute('data-id'), btn.getAttribute('data-name')); });
         });
         classesTbody.querySelectorAll('.btn-edit-class').forEach(function(btn) {
-            btn.addEventListener('click', function() { openEditClassModal(Number(btn.getAttribute('data-id')), btn.getAttribute('data-name')); });
+            btn.addEventListener('click', function() {
+                openEditClassModal(
+                    Number(btn.getAttribute('data-id')),
+                    btn.getAttribute('data-name'),
+                    btn.getAttribute('data-courses') || '',
+                    btn.getAttribute('data-school') || ''
+                );
+            });
         });
         classesTbody.querySelectorAll('.btn-del-class').forEach(function(btn) {
             btn.addEventListener('click', function() {
@@ -260,25 +311,31 @@
 
     function openClassModal() {
         classNameInput.value = '';
-        classSchoolSelect.innerHTML = '<option value="">加载中…</option>';
+        classSchoolSelect.innerHTML = '<option value="">请选择学校</option>';
+        if (allSchools.length === 0) { classSchoolSelect.innerHTML = '<option value="">请先创建学校</option>'; }
+        allSchools.forEach(function(s) { var o = document.createElement('option'); o.value = s.id; o.textContent = s.name; classSchoolSelect.appendChild(o); });
+        fillCourseChecks(document.getElementById('class-modal-courses'), null, []);
         classModalOverlay.style.display = 'flex';
-        API.get('/schools/').then(function(schools) {
-            schools = schools || [];
-            classSchoolSelect.innerHTML = '<option value="">请选择学校</option>';
-            if (schools.length === 0) { classSchoolSelect.innerHTML = '<option value="">请先创建学校</option>'; return; }
-            schools.forEach(function(s) { var o = document.createElement('option'); o.value = s.id; o.textContent = s.name; classSchoolSelect.appendChild(o); });
-        }).catch(function() { classSchoolSelect.innerHTML = '<option value="">加载学校失败</option>'; });
     }
     function closeClassModal() { classModalOverlay.style.display = 'none'; }
     document.getElementById('add-class-btn').addEventListener('click', openClassModal);
     classCancelBtn.addEventListener('click', closeClassModal);
     classModalOverlay.addEventListener('click', function(e) { if (e.target === classModalOverlay) closeClassModal(); });
+    // 切换学校时刷新课程复选框（按学校过滤）并清空选中
+    classSchoolSelect.addEventListener('change', function() {
+        fillCourseChecks(document.getElementById('class-modal-courses'), classSchoolSelect.value, []);
+    });
     classSaveBtn.addEventListener('click', function() {
         var name = classNameInput.value.trim(); var schoolId = classSchoolSelect.value;
         if (!schoolId) { alert('请选择所属学校'); return; }
         if (!name) { alert('请输入班级名称'); return; }
+        var payload = {
+            name: name,
+            school_id: parseInt(schoolId),
+            course_ids: readCourseChecks(document.getElementById('class-modal-courses'))
+        };
         classSaveBtn.disabled = true; classSaveBtn.textContent = '提交中…';
-        API.post('/classes/', { name: name, school_id: parseInt(schoolId) }).then(function() { closeClassModal(); loadClasses(); })
+        API.post('/classes/', payload).then(function() { closeClassModal(); loadClasses(); })
             .catch(function(err) { alert('添加失败：' + (err.message || '未知错误')); })
             .then(function() { classSaveBtn.disabled = false; classSaveBtn.textContent = '提交'; });
     });
@@ -290,15 +347,26 @@
     var editClassCancelBtn = document.getElementById('edit-class-modal-cancel');
     var editingClassId = null;
 
-    function openEditClassModal(id, name) { editingClassId = id; editClassNameInput.value = name || ''; editClassOverlay.style.display = 'flex'; }
+    function openEditClassModal(id, name, courseIdsCsv, schoolId) {
+        editingClassId = id;
+        editClassNameInput.value = name || '';
+        var selected = (courseIdsCsv || '').split(',').filter(function(x) { return x !== ''; });
+        fillCourseChecks(document.getElementById('edit-class-modal-courses'), schoolId || null, selected);
+        editClassOverlay.style.display = 'flex';
+    }
     function closeEditClassModal() { editClassOverlay.style.display = 'none'; editingClassId = null; }
     editClassCancelBtn.addEventListener('click', closeEditClassModal);
     editClassOverlay.addEventListener('click', function(e) { if (e.target === editClassOverlay) closeEditClassModal(); });
     editClassSaveBtn.addEventListener('click', function() {
         var name = editClassNameInput.value.trim();
         if (!name) { alert('请输入班级名称'); return; }
+        // 复选框结果整体替换关联（空数组 = 清空）
+        var payload = {
+            name: name,
+            course_ids: readCourseChecks(document.getElementById('edit-class-modal-courses'))
+        };
         editClassSaveBtn.disabled = true; editClassSaveBtn.textContent = '保存中…';
-        API.put('/classes/' + editingClassId, { name: name }).then(function() { closeEditClassModal(); loadClasses(); })
+        API.put('/classes/' + editingClassId, payload).then(function() { closeEditClassModal(); loadClasses(); })
             .catch(function(err) { alert('保存失败：' + (err.message || '未知错误')); })
             .then(function() { editClassSaveBtn.disabled = false; editClassSaveBtn.textContent = '保存'; });
     });
@@ -308,23 +376,39 @@
     var studentsModalTitle = document.getElementById('students-modal-title');
     var studentsModalTbody = document.getElementById('students-modal-tbody');
     var studentsModalClose = document.getElementById('students-modal-close');
+    var studentsModalClassId = null;
+    var studentsModalClassName = '';
 
     function openStudentsModal(classId, className) {
-        studentsModalTitle.textContent = className + ' — 学生列表';
-        studentsModalTbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:#999;">加载中…</td></tr>';
+        studentsModalClassId = classId;
+        studentsModalClassName = className || '班级';
+        studentsModalTitle.textContent = studentsModalClassName + ' — 学生列表';
+        studentsModalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#999;">加载中…</td></tr>';
         studentsModalOverlay.style.display = 'flex';
         API.get('/classes/' + classId + '/students').then(function(students) {
             students = students || [];
-            if (students.length === 0) { studentsModalTbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:#999;">该班级暂无学生</td></tr>'; return; }
+            if (students.length === 0) { studentsModalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#999;">该班级暂无学生</td></tr>'; return; }
             studentsModalTbody.innerHTML = '';
             students.forEach(function(s) {
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>' + escapeHtml(s.username || s.account || '-') + '</td><td>' + escapeHtml(s.full_name || s.name || '-') + '</td>';
+                tr.innerHTML = '<td>' + escapeHtml(s.username || s.account || '-') + '</td>'
+                    + '<td>' + escapeHtml(s.full_name || s.name || '-') + '</td>'
+                    + '<td><button class="btn btn-danger btn-sm btn-remove-student" data-id="' + s.id + '">移除</button></td>';
                 studentsModalTbody.appendChild(tr);
             });
+            studentsModalTbody.querySelectorAll('.btn-remove-student').forEach(function(btn) {
+                btn.addEventListener('click', function() { removeStudentFromClass(studentsModalClassId, Number(btn.getAttribute('data-id'))); });
+            });
         }).catch(function(err) {
-            studentsModalTbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:16px;color:#e74c3c;">加载失败：' + escapeHtml(err.message || '未知错误') + '</td></tr>';
+            studentsModalTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:16px;color:#e74c3c;">加载失败：' + escapeHtml(err.message || '未知错误') + '</td></tr>';
         });
+    }
+    function removeStudentFromClass(classId, studentId) {
+        if (!confirm('确定将该学生从班级移除？')) return;
+        API.delete('/classes/' + classId + '/students/' + studentId).then(function() {
+            openStudentsModal(classId, studentsModalClassName);
+            loadClasses();
+        }).catch(function(err) { alert('移除失败：' + (err.message || '未知错误')); });
     }
     function closeStudentsModal() { studentsModalOverlay.style.display = 'none'; }
     studentsModalClose.addEventListener('click', closeStudentsModal);

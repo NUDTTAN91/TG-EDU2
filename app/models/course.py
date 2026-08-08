@@ -19,4 +19,4 @@ class Course(Base):
     teacher = relationship("User", back_populates="courses")
     school = relationship("School", back_populates="courses")
     assignments = relationship("Assignment", back_populates="course")
-    classes = relationship("Class", back_populates="course")
+    classes = relationship("Class", secondary="class_courses", back_populates="courses")

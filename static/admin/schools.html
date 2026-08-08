@@ -21,6 +21,12 @@
 /* 按钮缩小 */
 .btn-sm{padding:5px 12px;font-size:0.75rem;}
 
+/* 课程多选复选框列表 */
+.course-checks{max-height:160px;overflow-y:auto;border:2px solid #ddd;border-radius:8px;padding:8px 10px;background:#fff;}
+.course-checks label{display:flex;gap:8px;align-items:center;font-size:0.85rem;padding:4px 0;cursor:pointer;}
+.course-checks .empty{color:#999;font-size:0.82rem;padding:4px 0;}
+[data-theme="dark"] .course-checks{background:var(--card);border-color:#555;}
+
 /* Tab 按钮组 */
 .topbar-left{display:flex;align-items:center;gap:20px;flex:1;min-width:0;}
 .topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
@@ -82,7 +88,7 @@
 <div id="classes-empty" class="empty-state anim"><i data-lucide="users"></i><p>暂无班级，点击右上角添加</p></div>
 <div class="panel" id="classes-panel-wrapper" style="display:none">
 <table class="data-table" id="classes-table">
-<thead><tr><th>班级名称</th><th>所属学校</th><th>学生数</th><th>创建时间</th><th>操作</th></tr></thead>
+<thead><tr><th>班级名称</th><th>所属学校</th><th>所属课程</th><th>学生数</th><th>创建时间</th><th>操作</th></tr></thead>
 <tbody id="classes-tbody"></tbody>
 </table>
 </div>
@@ -129,6 +135,10 @@
 <select id="class-modal-school" class="form-select" style="width:100%"><option value="">请选择学校</option></select>
 </div>
 <div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">所属课程（可多选）</label>
+<div id="class-modal-courses" class="course-checks"></div>
+</div>
+<div style="margin-bottom:20px;">
 <label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">班级名称</label>
 <input id="class-modal-name" class="form-input" style="width:100%" placeholder="请输入班级名称">
 </div>
@@ -143,6 +153,10 @@
 <div id="edit-class-modal-overlay" class="overlay">
 <div class="modal-box">
 <h3 id="edit-class-modal-title" style="margin:0 0 20px;font-size:1.1rem;">编辑班级</h3>
+<div style="margin-bottom:20px;">
+<label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">所属课程（可多选）</label>
+<div id="edit-class-modal-courses" class="course-checks"></div>
+</div>
 <div style="margin-bottom:20px;">
 <label style="display:block;margin-bottom:4px;font-size:0.9rem;color:#555;">班级名称</label>
 <input id="edit-class-modal-name" class="form-input" style="width:100%" placeholder="请输入班级名称">
@@ -160,7 +174,7 @@
 <h3 id="students-modal-title" style="margin:0 0 8px;font-size:1.1rem;">班级学生</h3>
 <div class="student-list" id="students-modal-list">
 <table>
-<thead><tr><th>账号</th><th>姓名</th></tr></thead>
+<thead><tr><th>账号</th><th>姓名</th><th>操作</th></tr></thead>
 <tbody id="students-modal-tbody"></tbody>
 </table>
 </div>

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.assignment import Assignment
 from app.models.course import Course
 from app.models.school import School
-from app.models.school_class import Class, class_students
+from app.models.school_class import Class, class_students, class_courses
 from app.models.submission import Submission
 from app.models.user import User
 
@@ -41,7 +41,8 @@ async def build_submission_label(
         )
         if assignment is not None:
             cls = await _first(
-                db, base.where(Class.course_id == assignment.course_id)
+                db, base.join(class_courses, Class.id == class_courses.c.class_id)
+                .where(class_courses.c.course_id == assignment.course_id)
                 .order_by(Class.id).limit(1)
             )
         if cls is None:

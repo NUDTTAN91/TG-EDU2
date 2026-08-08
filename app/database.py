@@ -304,3 +304,17 @@ async def init_db():
                 connection.execute(text("ALTER TABLE assignments ADD COLUMN auto_ai_grade BOOLEAN DEFAULT 0"))
 
         await conn.run_sync(_migrate_auto_ai_grade)
+
+    # 班级↔课程多对多：把存量 classes.course_id 搬入 class_courses（幂等，NOT EXISTS 守卫）
+    async with engine.begin() as conn:
+        def _migrate_class_courses(connection):
+            from sqlalchemy import text
+            connection.execute(text(
+                "INSERT INTO class_courses (class_id, course_id) "
+                "SELECT c.id, c.course_id FROM classes c "
+                "WHERE c.course_id IS NOT NULL AND NOT EXISTS ("
+                "SELECT 1 FROM class_courses cc "
+                "WHERE cc.class_id = c.id AND cc.course_id = c.course_id)"
+            ))
+
+        await conn.run_sync(_migrate_class_courses)

@@ -17,7 +17,7 @@ from app.models.submission import Submission
 from app.models.assignment import Assignment
 from app.models.course import Course
 from app.models.school import School
-from app.models.school_class import Class, class_students
+from app.models.school_class import Class, class_students, class_courses
 from app.config import settings
 from app.utils.dependencies import get_current_user, require_role
 from app.utils.audit import log_action
@@ -140,13 +140,14 @@ async def _resolve_upload_context(
 
     course_name = _safe_name(course.name if course else "")
 
-    # 查找学生在此课程对应的班级（可能有多个班，取一个即可）
+    # 查找学生在此课程对应的班级（多对多关联，可能有多个班，取一个即可）
     class_result = await db.execute(
         select(Class)
         .join(class_students, Class.id == class_students.c.class_id)
+        .join(class_courses, Class.id == class_courses.c.class_id)
         .where(
             class_students.c.student_id == current_user.id,
-            Class.course_id == assignment.course_id,
+            class_courses.c.course_id == assignment.course_id,
         )
         .order_by(Class.id)
         .limit(1)
