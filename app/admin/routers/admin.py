@@ -1,11 +1,17 @@
 from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import List, Literal, Optional
 from app.database import get_db
 from app.models.user import User
+from app.models.course import Course
+from app.models.submission import Submission
+from app.models.late_submission import LateSubmission
+from app.models.audit_log import AuditLog
+from app.models.school_class import class_students
 from app.utils.dependencies import require_role
 from app.admin.services import admin_service
 from app.utils.audit import log_action
@@ -205,3 +211,61 @@ async def toggle_user(
         detail=f"切换了用户 {target_user.username} 的状态",
     )
     return {"message": f"用户已{'启用' if user.is_active else '禁用'}"}
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除账号。仅允许删除「无业务数据残留」的账号：
+    管理员/自身不可删；名下有课程、有提交、有批改记录者拒绝（改用禁用）。
+    清理项：班级成员关系、本人补交申请、本人作为审核人的引用置空、审计日志用户引用置空。"""
+    from app.admin.services.admin_service import get_user_by_id
+    target = await get_user_by_id(db, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if target.role == "admin":
+        raise HTTPException(status_code=403, detail="不能删除管理员账号")
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="不能删除当前登录账号")
+
+    # 业务数据残留检查
+    course_count = (await db.execute(
+        select(func.count(Course.id)).where(Course.teacher_id == user_id)
+    )).scalar() or 0
+    if course_count > 0:
+        raise HTTPException(status_code=400, detail=f"该教师名下仍有 {course_count} 门课程，请先删除或改派课程")
+    sub_count = (await db.execute(
+        select(func.count(Submission.id)).where(Submission.student_id == user_id)
+    )).scalar() or 0
+    if sub_count > 0:
+        raise HTTPException(status_code=400, detail=f"该学生仍有 {sub_count} 条提交记录，请改用「禁用」保留数据")
+    graded_count = (await db.execute(
+        select(func.count(Submission.id)).where(Submission.graded_by == user_id)
+    )).scalar() or 0
+    if graded_count > 0:
+        raise HTTPException(status_code=400, detail=f"该账号仍有 {graded_count} 条批改记录，请改用「禁用」保留数据")
+
+    username_snapshot = target.username
+
+    # 清理可安全清理的关联
+    await db.execute(class_students.delete().where(class_students.c.student_id == user_id))
+    await db.execute(LateSubmission.__table__.delete().where(LateSubmission.student_id == user_id))
+    await db.execute(update(LateSubmission).where(LateSubmission.reviewed_by == user_id).values(reviewed_by=None))
+    await db.execute(update(AuditLog).where(AuditLog.user_id == user_id).values(user_id=None))
+
+    await db.delete(target)
+    await db.commit()
+    await log_action(
+        db,
+        action="delete_user",
+        category="user_management",
+        user_id=current_user.id,
+        username=current_user.username,
+        detail=f"删除了账号 {username_snapshot}（#{user_id}）",
+        ip_address=get_client_ip(request),
+    )
+    return {"message": f"账号 {username_snapshot} 已删除"}

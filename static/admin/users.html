@@ -112,6 +112,20 @@
 </div>
 </div>
 
+<!-- 删除账号确认弹窗 -->
+<div id="del-modal-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+<div style="background:var(--card);border:3px solid var(--ink);border-radius:14px;padding:28px 32px;min-width:380px;max-width:90vw;box-shadow:6px 6px 0 var(--ink);">
+<h3 style="margin:0 0 12px;font-size:1.1rem;display:flex;align-items:center;gap:8px;"><i data-lucide="alert-triangle" style="width:18px;height:18px;color:#e74c3c"></i> 删除账号</h3>
+<p style="margin:0 0 6px;font-size:0.92rem;">确定删除账号 <strong id="del-modal-name" style="color:#e74c3c"></strong> ？</p>
+<p style="margin:0 0 14px;font-size:0.8rem;color:#888;line-height:1.6;">该操作不可撤销。若该账号已有提交 / 课程 / 批改记录，将被拒绝删除并提示改用「禁用」。</p>
+<div id="del-modal-error" style="display:none;color:#e74c3c;background:rgba(231,76,60,.08);border:1.5px solid #e74c3c;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:.82rem"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button id="del-modal-cancel" class="btn btn-secondary">取消</button>
+<button id="del-modal-confirm" class="btn" style="background:#e74c3c;color:#fff;">确认删除</button>
+</div>
+</div>
+</div>
+
 <script src="../assets/js/lucide.js"></script>
 <script src="../assets/js/shared.js"></script>
 <script src="../assets/js/api.js"></script>

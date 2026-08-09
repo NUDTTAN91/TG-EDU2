@@ -61,7 +61,8 @@
             } else {
                 var toggleText = u.is_active ? '禁用' : '启用';
                 var toggleColor = u.is_active ? '#e74c3c' : '#27ae60';
-                actionHtml = '<button class="btn btn-secondary btn-toggle" data-id="' + u.id + '" style="color:' + toggleColor + '">' + toggleText + '</button>';
+                actionHtml = '<button class="btn btn-secondary btn-toggle" data-id="' + u.id + '" style="color:' + toggleColor + '">' + toggleText + '</button> '
+                    + '<button class="btn btn-secondary btn-delete" data-id="' + u.id + '" data-name="' + escapeHtml(u.username) + '" style="color:#e74c3c">删除</button>';
             }
             var displayName = escapeHtml(u.full_name || u.username);
             var avatarHtml;
@@ -88,6 +89,7 @@
             tbody.appendChild(tr);
         });
         bindToggle();
+        bindDelete();
     }
 
     function showError(msg) {
@@ -116,6 +118,8 @@
     }
 
     function loadUsers() {
+        // 记录当前滚动位置，列表刷新后恢复，避免删除/禁用后被弹回顶部
+        var prevScroll = window.scrollY || 0;
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:#999;">加载中…</td></tr>';
         Promise.all([
             API.get('/admin/users'),
@@ -128,6 +132,7 @@
             populateSchoolFilter(schools);
             populateModalSchools(schools);
             applyFilters();
+            window.scrollTo(0, prevScroll);
         }).catch(function(err) {
             showError('加载用户列表失败：' + (err.message || '未知错误'));
         });
@@ -184,6 +189,54 @@
                     btn.disabled = false;
                     btn.textContent = origText;
                 });
+            });
+        });
+    }
+
+    // --- 删除账号确认弹窗（页内模态，替代原生 confirm） ---
+    var delOverlay = document.getElementById('del-modal-overlay');
+    var delNameEl = document.getElementById('del-modal-name');
+    var delErrorEl = document.getElementById('del-modal-error');
+    var delConfirmBtn = document.getElementById('del-modal-confirm');
+    var delCancelBtn = document.getElementById('del-modal-cancel');
+    var pendingDeleteId = null;
+
+    function openDeleteModal(id, name) {
+        pendingDeleteId = id;
+        delNameEl.textContent = name || '';
+        delErrorEl.style.display = 'none';
+        delErrorEl.textContent = '';
+        delOverlay.style.display = 'flex';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    function closeDeleteModal() {
+        delOverlay.style.display = 'none';
+        pendingDeleteId = null;
+    }
+    delCancelBtn.addEventListener('click', closeDeleteModal);
+    delOverlay.addEventListener('click', function(e) { if (e.target === delOverlay) closeDeleteModal(); });
+    delConfirmBtn.addEventListener('click', function() {
+        if (!pendingDeleteId) return;
+        var id = pendingDeleteId;
+        delConfirmBtn.disabled = true;
+        delConfirmBtn.textContent = '删除中…';
+        API.delete('/admin/users/' + id).then(function() {
+            closeDeleteModal();
+            loadUsers();
+        }).catch(function(err) {
+            delErrorEl.textContent = err.message || '删除失败';
+            delErrorEl.style.display = 'block';
+        }).then(function() {
+            delConfirmBtn.disabled = false;
+            delConfirmBtn.textContent = '确认删除';
+        });
+    });
+
+    function bindDelete() {
+        var btns = tbody.querySelectorAll('.btn-delete');
+        btns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                openDeleteModal(btn.getAttribute('data-id'), btn.getAttribute('data-name'));
             });
         });
     }
