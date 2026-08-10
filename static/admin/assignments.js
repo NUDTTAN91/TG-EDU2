@@ -63,6 +63,7 @@ function formatDateTime(dateStr) {
 // ===== Data =====
 var allSchools = [], allCourses = [], allClasses = [], allAssignments = [], allSubmissions = [];
 var courseMap = {};
+var classNameMap = {};
 var typeLabels = { homework: '课后作业', experiment: '实验报告', essay: '论文', project: '项目' };
 var currentType = 'homework';
 
@@ -101,6 +102,8 @@ function loadAllData() {
         allSubmissions = results[4] || [];
 
         allCourses.forEach(function(c) { courseMap[c.id] = c.name || ('课程 ' + c.id); });
+        classNameMap = {};
+        allClasses.forEach(function(c) { classNameMap[c.id] = c.name || ('班级 ' + c.id); });
 
         populateSchoolSelect();
         populateCourseFilter();
@@ -326,6 +329,14 @@ function updatePreview() {
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
 }
 
+// 读取已勾选的班级 id（作业定向）
+function getSelectedClassIds() {
+    var chips = document.querySelectorAll('#classChips .chip.checked');
+    return Array.prototype.map.call(chips, function(c) {
+        return parseInt(c.getAttribute('data-class-id'), 10);
+    }).filter(function(x) { return !isNaN(x); });
+}
+
 // ===== Publish Assignment =====
 function handlePublish() {
     // If in edit mode, delegate to saveEditAssignment
@@ -340,6 +351,9 @@ function handlePublish() {
     if (!title) { showToast('请输入作业标题', true); return; }
     if (!courseId) { showToast('请先选择学校、班级和课程', true); return; }
 
+    var classIds = getSelectedClassIds();
+    if (classIds.length === 0) { showToast('请至少选择一个班级（决定该作业布置给谁）', true); return; }
+
     var attachments = formatVal || 'pdf, docx, zip';
     var payload = {
         title: title,
@@ -347,7 +361,8 @@ function handlePublish() {
         course_id: parseInt(courseId),
         deadline: deadline ? deadline + ':00' : null,
         attachments: attachments,
-        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on')
+        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on'),
+        class_ids: classIds
     };
 
     var btn = document.getElementById('publishBtn');
@@ -390,16 +405,20 @@ function renderAssignments() {
         return true;
     });
     if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">暂无作业数据</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-msg">暂无作业数据</td></tr>';
         return;
     }
     var html = '';
     filtered.forEach(function(a) {
         var subs = allSubmissions.filter(function(s) { return s.assignment_id === a.id; });
         var graded = subs.filter(function(s) { return s.grade !== null && s.grade !== undefined; }).length;
+        var targetHtml = (a.class_ids && a.class_ids.length)
+            ? a.class_ids.map(function(id) { return escapeHtml(classNameMap[id] || ('班级 ' + id)); }).join('<br>')
+            : '<span style="color:#e67e22">未指定（全课程可见）</span>';
         html += '<tr>'
             + '<td><strong>' + escapeHtml(a.title) + '</strong></td>'
             + '<td>' + escapeHtml(courseMap[a.course_id] || '-') + '</td>'
+            + '<td>' + targetHtml + '</td>'
             + '<td>' + formatDateTime(a.deadline) + '</td>'
             + '<td>' + subs.length + '</td>'
             + '<td>' + graded + '/' + subs.length + '</td>'
@@ -450,9 +469,16 @@ function editAssignment(assignId) {
         // Wait a tick for DOM to update, then select classes belonging to this course
         setTimeout(function() {
             var chips = document.querySelectorAll('#classChips .chip');
+            var targeted = (a.class_ids || []).map(String);
             chips.forEach(function(chip) {
-                var chipCourseIds = (chip.getAttribute('data-course-ids') || '').split(',');
-                if (chipCourseIds.indexOf(String(a.course_id)) !== -1) {
+                // 优先按作业定向班级回填；无定向（旧数据）时回退按班级关联课程
+                var hit;
+                if (targeted.length > 0) {
+                    hit = targeted.indexOf(String(chip.getAttribute('data-class-id'))) !== -1;
+                } else {
+                    hit = (chip.getAttribute('data-course-ids') || '').split(',').indexOf(String(a.course_id)) !== -1;
+                }
+                if (hit) {
                     var input = chip.querySelector('input');
                     if (input && !input.checked) {
                         input.checked = true;
@@ -488,6 +514,9 @@ function saveEditAssignment() {
     if (!title) { showToast('请输入作业标题', true); return; }
     if (!courseId) { showToast('请先选择学校、班级和课程', true); return; }
 
+    var classIds = getSelectedClassIds();
+    if (classIds.length === 0) { showToast('请至少选择一个班级（决定该作业布置给谁）', true); return; }
+
     var attachments = formatVal || 'pdf, docx, zip';
     var payload = {
         title: title,
@@ -495,7 +524,8 @@ function saveEditAssignment() {
         course_id: parseInt(courseId),
         deadline: deadline ? deadline + ':00' : null,
         attachments: attachments,
-        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on')
+        auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on'),
+        class_ids: classIds
     };
 
     var btn = document.getElementById('publishBtn');

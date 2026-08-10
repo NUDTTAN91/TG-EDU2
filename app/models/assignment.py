@@ -1,8 +1,17 @@
 import uuid
 from app.utils.time_util import cst_now
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, Table
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+# 作业↔班级定向表：作业只对被定向的班级可见。
+# 空定向（无任何行）= 兼容旧数据，视为「该课程下全部班级可见」
+assignment_classes = Table(
+    "assignment_classes",
+    Base.metadata,
+    Column("assignment_id", Integer, ForeignKey("assignments.id"), primary_key=True),
+    Column("class_id", Integer, ForeignKey("classes.id"), primary_key=True),
+)
 
 
 class Assignment(Base):
@@ -22,3 +31,4 @@ class Assignment(Base):
 
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
+    classes = relationship("Class", secondary=assignment_classes)

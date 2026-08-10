@@ -144,8 +144,13 @@ function applyFilters() {
     }
 
     // Filter assignments by course
+    // 再按班级定向收窄：只保留定向到所选班级的作业；无定向（旧数据）视为课程全班可见
+    var selectedClassId = parseInt(classId, 10);
     filteredAssignments = allAssignments.filter(function(a) {
-        return courseIds.indexOf(a.course_id) !== -1;
+        if (courseIds.indexOf(a.course_id) === -1) return false;
+        var t = a.class_ids || [];
+        if (t.length === 0) return true;
+        return t.map(Number).indexOf(selectedClassId) !== -1;
     }).sort(function(a, b) {
         return parseCST(a.created_at) - parseCST(b.created_at);
     });

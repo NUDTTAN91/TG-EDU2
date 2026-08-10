@@ -318,3 +318,18 @@ async def init_db():
             ))
 
         await conn.run_sync(_migrate_class_courses)
+
+    # 作业↔班级定向：存量作业若其课程只关联唯一班级，则自动定向到该班（无歧义）。
+    # 课程关联多个班级的作业保持空定向（= 该课程全部班级可见），由管理员在作业编辑中指定。
+    async with engine.begin() as conn:
+        def _migrate_assignment_classes(connection):
+            from sqlalchemy import text
+            connection.execute(text(
+                "INSERT INTO assignment_classes (assignment_id, class_id) "
+                "SELECT a.id, cc.class_id FROM assignments a "
+                "JOIN class_courses cc ON cc.course_id = a.course_id "
+                "WHERE (SELECT COUNT(*) FROM class_courses x WHERE x.course_id = a.course_id) = 1 "
+                "AND NOT EXISTS (SELECT 1 FROM assignment_classes ac WHERE ac.assignment_id = a.id)"
+            ))
+
+        await conn.run_sync(_migrate_assignment_classes)

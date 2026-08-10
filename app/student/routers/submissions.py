@@ -14,7 +14,7 @@ from app.utils.time_util import cst_now
 from app.database import get_db
 from app.models.user import User
 from app.models.submission import Submission
-from app.models.assignment import Assignment
+from app.models.assignment import Assignment, assignment_classes
 from app.models.course import Course
 from app.models.school import School
 from app.models.school_class import Class, class_students, class_courses
@@ -119,6 +119,31 @@ async def _ensure_assignment_folder(db: AsyncSession, assignment: Assignment) ->
     return final_folder
 
 
+async def _assert_student_targeted(db: AsyncSession, assignment: Assignment, current_user: User):
+    """校验学生是否在该作业的定向班级内。
+    有定向：必须属于其中某个班；无定向（旧数据）：必须有班级关联了该作业的课程。"""
+    my_class_ids = (await db.execute(
+        select(class_students.c.class_id).where(class_students.c.student_id == current_user.id)
+    )).scalars().all()
+    if not my_class_ids:
+        raise HTTPException(status_code=403, detail="你尚未加入任何班级，无法提交作业")
+    targeted = (await db.execute(
+        select(assignment_classes.c.class_id).where(assignment_classes.c.assignment_id == assignment.id)
+    )).scalars().all()
+    if targeted:
+        if not set(targeted) & set(my_class_ids):
+            raise HTTPException(status_code=403, detail="该作业未布置给你所在的班级")
+        return
+    linked = (await db.execute(
+        select(class_courses.c.class_id).where(
+            class_courses.c.course_id == assignment.course_id,
+            class_courses.c.class_id.in_(my_class_ids),
+        )
+    )).scalars().all()
+    if not linked:
+        raise HTTPException(status_code=403, detail="你所在班级未关联该作业的课程")
+
+
 async def _resolve_upload_context(
     db: AsyncSession, assignment: Assignment, current_user: User
 ) -> Tuple[str, str, str, str]:
@@ -140,19 +165,35 @@ async def _resolve_upload_context(
 
     course_name = _safe_name(course.name if course else "")
 
-    # 查找学生在此课程对应的班级（多对多关联，可能有多个班，取一个即可）
+    # 查找学生在此作业下对应的班级：
+    # 优先取「作业定向班级 ∩ 学生所在班级」，保证同课程多班时目录归属正确；
+    # 无定向（旧数据）时回退到「关联该课程的班级」，再回退学生任意班级
     class_result = await db.execute(
         select(Class)
         .join(class_students, Class.id == class_students.c.class_id)
-        .join(class_courses, Class.id == class_courses.c.class_id)
+        .join(assignment_classes, Class.id == assignment_classes.c.class_id)
         .where(
             class_students.c.student_id == current_user.id,
-            class_courses.c.course_id == assignment.course_id,
+            assignment_classes.c.assignment_id == assignment.id,
         )
         .order_by(Class.id)
         .limit(1)
     )
     student_class = class_result.scalars().first()
+
+    if not student_class:
+        by_course = await db.execute(
+            select(Class)
+            .join(class_students, Class.id == class_students.c.class_id)
+            .join(class_courses, Class.id == class_courses.c.class_id)
+            .where(
+                class_students.c.student_id == current_user.id,
+                class_courses.c.course_id == assignment.course_id,
+            )
+            .order_by(Class.id)
+            .limit(1)
+        )
+        student_class = by_course.scalars().first()
 
     # 兜底：查学生的任意班级
     if not student_class:
@@ -293,6 +334,9 @@ async def submit_assignment(
     if not assignment:
         raise HTTPException(status_code=404, detail="作业不存在")
 
+    # 班级定向校验：该作业必须布置给学生所在班级（防跨班提交）
+    await _assert_student_targeted(db, assignment, current_user)
+
     # 截止时间检查：若逾期，需已批准的补交申请方可提交
     if assignment.deadline and cst_now() > assignment.deadline:
         has_approved = await late_submission_service.get_approved_late_for_assignment(
@@ -397,6 +441,9 @@ async def resubmit_assignment(
     assignment = await assignment_service.get_assignment(db, submission.assignment_id)
     if not assignment:
         raise HTTPException(status_code=404, detail="关联作业不存在")
+
+    # 班级定向校验（防跨班重交）
+    await _assert_student_targeted(db, assignment, current_user)
 
     # 规则：仅 deadline 前允许重新提交
     if assignment.deadline and cst_now() >= assignment.deadline:
