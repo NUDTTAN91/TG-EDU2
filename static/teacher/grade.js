@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         html += '<span class="s-status" style="background:var(--yellow)">待批</span>';
       }
+      if (!isGraded && s.ai_suggested_grade !== null && s.ai_suggested_grade !== undefined) {
+        html += '<span class="s-status" style="background:var(--lavender)">AI ' + s.ai_suggested_grade + '</span>';
+      }
       if (isGraded && (s.graded_by === null || s.graded_by === undefined)) {
         html += '<span class="s-status" style="background:var(--lavender)">AI</span>';
       }
@@ -164,9 +167,22 @@ document.addEventListener('DOMContentLoaded', function() {
       fileMetaEl.textContent = '提交于 ' + submitTime;
     }
 
-    // 重置输入
+    // 重置输入：已批用正式分；未批但有 AI 建议分时预填作参考
     var scoreInput = document.getElementById('scoreInput');
-    if (scoreInput) scoreInput.value = sub.grade !== null && sub.grade !== undefined ? sub.grade : '';
+    var hasGrade = sub.grade !== null && sub.grade !== undefined;
+    var hasAi = sub.ai_suggested_grade !== null && sub.ai_suggested_grade !== undefined;
+    if (scoreInput) scoreInput.value = hasGrade ? sub.grade : (hasAi ? sub.ai_suggested_grade : '');
+
+    var hint = document.getElementById('aiSuggestHint');
+    if (hint) {
+      if (!hasGrade && hasAi) {
+        hint.style.display = '';
+        hint.textContent = 'AI 建议 ' + sub.ai_suggested_grade + ' 分（仅参考，可修改；提交批改后才生效）';
+      } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+      }
+    }
 
     var commentInput = document.getElementById('commentInput');
     if (commentInput) commentInput.value = sub.feedback || '';

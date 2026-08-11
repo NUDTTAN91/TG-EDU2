@@ -333,3 +333,16 @@ async def init_db():
             ))
 
         await conn.run_sync(_migrate_assignment_classes)
+
+    # submissions 增加 AI 建议分字段（仅参考，未审核不生效；幂等）
+    async with engine.begin() as conn:
+        def _migrate_ai_suggested_grade(connection):
+            from sqlalchemy import inspect, text
+            insp = inspect(connection)
+            if "submissions" not in insp.get_table_names():
+                return
+            cols = [c["name"] for c in insp.get_columns("submissions")]
+            if "ai_suggested_grade" not in cols:
+                connection.execute(text("ALTER TABLE submissions ADD COLUMN ai_suggested_grade INTEGER"))
+
+        await conn.run_sync(_migrate_ai_suggested_grade)

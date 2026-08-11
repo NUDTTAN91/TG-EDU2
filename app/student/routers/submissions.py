@@ -306,6 +306,7 @@ class SubmissionResponse(BaseModel):
     submitted_at: datetime
     graded_at: Optional[datetime] = None
     graded_by: Optional[int] = None
+    ai_suggested_grade: Optional[int] = None
     student_name: Optional[str] = None
     username: Optional[str] = None
     avatar: Optional[str] = None
@@ -578,6 +579,7 @@ def _mask_unreviewed(items, is_student: bool):
         if it.graded_by is None:
             it.grade = None
             it.feedback = ""
+            it.ai_suggested_grade = None
     return items
 
 
@@ -595,6 +597,7 @@ def _row_to_response(row):
         submitted_at=row.Submission.submitted_at,
         graded_at=row.Submission.graded_at,
         graded_by=row.Submission.graded_by,
+        ai_suggested_grade=row.Submission.ai_suggested_grade,
         student_name=row.full_name or "",
         username=row.username or "",
         avatar=row.avatar or None,
@@ -617,9 +620,10 @@ async def get_submission(
     await _authorize_submission_access(db, submission, current_user)
     data = SubmissionResponse.model_validate(submission)
     if current_user.role == "student" and data.graded_by is None:
-        # 未人工审核的分数/评语（AI 草稿、历史 direct 遗留）对学生不可见
+        # 未人工审核的分数/评语/AI建议分（AI 草稿、历史 direct 遗留）对学生不可见
         data.grade = None
         data.feedback = ""
+        data.ai_suggested_grade = None
     return data
 
 

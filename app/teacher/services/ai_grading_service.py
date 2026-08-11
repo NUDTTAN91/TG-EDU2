@@ -264,9 +264,10 @@ async def process_submission(submission_id: int) -> None:
             finally:
                 shutil.rmtree(tmp_dir, ignore_errors=True)
 
-            # AI 结果一律为待审核草稿：只写评语草稿、分数留空、状态回 submitted，
-            # 由教师/管理员审核并提交批改后才应用分数、学生才可见
+            # AI 结果一律为待审核草稿：写评语草稿 + AI 建议分（仅参考），
+            # 正式 grade 留空、状态回 submitted，由教师/管理员审核提交后才应用
             submission.feedback = result["feedback"]
+            submission.ai_suggested_grade = result["grade"]
             submission.status = "submitted"
             db.add(submission)
             await db.commit()

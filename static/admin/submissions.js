@@ -251,6 +251,7 @@ function renderStudentList() {
             + '<div class="s-right">';
         if (isGraded) html += '<span class="s-score">' + s.grade + '</span>';
         html += '<span class="s-status" style="background:' + statusBg + '">' + statusText + '</span>';
+        if (!isGraded && s.ai_suggested_grade !== null && s.ai_suggested_grade !== undefined) html += '<span class="s-status" style="background:var(--lavender)">AI ' + s.ai_suggested_grade + '</span>';
         if (isGraded && (s.graded_by === null || s.graded_by === undefined)) html += '<span class="s-status" style="background:var(--lavender)">AI</span>';
         html += '</div></div>';
     });
@@ -328,9 +329,21 @@ function selectStudent(idx) {
         }
     }
 
-    // Score & feedback
-    document.getElementById('scoreInput').value = (s.grade !== null && s.grade !== undefined) ? s.grade : '';
+    // Score & feedback：已批用正式分；未批但有 AI 建议分时预填作参考
+    var hasGrade = s.grade !== null && s.grade !== undefined;
+    var hasAi = s.ai_suggested_grade !== null && s.ai_suggested_grade !== undefined;
+    document.getElementById('scoreInput').value = hasGrade ? s.grade : (hasAi ? s.ai_suggested_grade : '');
     document.getElementById('commentInput').value = s.feedback || '';
+    var hint = document.getElementById('aiSuggestHint');
+    if (hint) {
+      if (!hasGrade && hasAi) {
+        hint.style.display = '';
+        hint.textContent = 'AI 建议 ' + s.ai_suggested_grade + ' 分（仅参考，可修改；提交批改后才生效）';
+      } else {
+        hint.style.display = 'none';
+        hint.textContent = '';
+      }
+    }
 
     // Re-render lucide icons in grade panel
     if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();

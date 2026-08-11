@@ -23,6 +23,7 @@ class Submission(Base):
     graded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     queued_at = Column(DateTime, nullable=True)  # AI 批改入队时间
     ai_mode = Column(String(10), nullable=True)  # direct / review
+    ai_suggested_grade = Column(Integer, nullable=True)  # AI 建议分（仅参考，未审核不生效）
 
     assignment = relationship("Assignment", back_populates="submissions")
     student = relationship("User", foreign_keys=[student_id], back_populates="submissions")
