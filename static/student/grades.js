@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
 var _courseMap = {};
 var _assignmentMap = {};
 var _allGraded = [];   // 全部已批改数据（用于统计卡片 & 课程筛选下拉）
+var _allPending = [];  // 已提交但待教师审核（分数对学生隐藏）
+var _allRows = [];     // 表格用 = 已批改 + 待审核
 var _currentPage = 1;
 var _pageSize = 20;
 var _totalGraded = 0;
@@ -39,19 +41,28 @@ function initGrades() {
 
     // 提取已批改提交（关联作业 + 课程）
     _allGraded = [];
+    _allPending = [];
     submissions.forEach(function(sub) {
-      if (sub.grade === null || sub.grade === undefined) return;
       var assignment = _assignmentMap[sub.assignment_id] || {};
       var course = _courseMap[assignment.course_id] || {};
-      _allGraded.push({
+      var base = {
         assignment_title: assignment.title || ('作业 #' + sub.assignment_id),
         course_name: course.name || '-',
-        course_id: assignment.course_id || null,
+        course_id: assignment.course_id || null
+      };
+      if (sub.grade === null || sub.grade === undefined) {
+        // 已提交但分数待教师审核：占位行，避免成绩页一片空白
+        _allPending.push(Object.assign({}, base, { pending: true }));
+        return;
+      }
+      _allGraded.push(Object.assign({}, base, {
+        pending: false,
         grade: sub.grade,
         feedback: sub.feedback || '',
         graded_at: sub.graded_at || sub.submitted_at
-      });
+      }));
     });
+    _allRows = _allGraded.concat(_allPending);
 
     renderStatsCards();
     renderCourseFilter();
@@ -75,10 +86,10 @@ function initGrades() {
 function fetchGradedPage() {
   var courseFilter = document.getElementById('filter-course').value;
 
-  // 如果有课程筛选，使用客户端分页（从 _allGraded 过滤）
+  // 如果有课程筛选，使用客户端分页（从 _allRows 过滤）
   if (courseFilter) {
     var cid = parseInt(courseFilter, 10);
-    var filtered = _allGraded.filter(function(g) { return g.course_id === cid; });
+    var filtered = _allRows.filter(function(g) { return g.course_id === cid; });
     _totalGraded = filtered.length;
     var totalPages = Math.ceil(filtered.length / _pageSize) || 1;
     if (_currentPage > totalPages) _currentPage = totalPages;
@@ -89,13 +100,12 @@ function fetchGradedPage() {
     return;
   }
 
-  // 无筛选时使用后端分页（仅已批改，按 graded_at 降序）
-  // 因为后端不支持 graded 过滤，用客户端分页保证正确性
-  var totalPages = Math.ceil(_allGraded.length / _pageSize) || 1;
+  // 无筛选时使用客户端分页（已批改 + 待审核）
+  var totalPages = Math.ceil(_allRows.length / _pageSize) || 1;
   if (_currentPage > totalPages) _currentPage = totalPages;
-  _totalGraded = _allGraded.length;
+  _totalGraded = _allRows.length;
   var start = (_currentPage - 1) * _pageSize;
-  var pageItems = _allGraded.slice(start, start + _pageSize);
+  var pageItems = _allRows.slice(start, start + _pageSize);
   renderGradesTable(pageItems);
   renderPagination(totalPages);
 }
@@ -104,8 +114,11 @@ function fetchGradedPage() {
 function renderStatsCards() {
   var container = document.getElementById('stats-cards');
   if (!_allGraded.length) {
+    var pendingNote = _allPending.length
+      ? ('另有 ' + _allPending.length + ' 项已提交、待教师审核')
+      : '暂无已批改作业';
     container.innerHTML =
-      '<div class="stat-card"><div class="stat-label">平均分</div><div class="stat-value">-</div><div class="stat-sub">暂无已批改作业</div></div>' +
+      '<div class="stat-card"><div class="stat-label">平均分</div><div class="stat-value">-</div><div class="stat-sub">' + pendingNote + '</div></div>' +
       '<div class="stat-card"><div class="stat-label">最高分</div><div class="stat-value">-</div><div class="stat-sub">-</div></div>' +
       '<div class="stat-card"><div class="stat-label">已批改</div><div class="stat-value">0</div><div class="stat-sub">共 0 项作业</div></div>';
     return;
@@ -147,7 +160,7 @@ function renderCourseFilter() {
   var select = document.getElementById('filter-course');
   var seen = {};
   var courseOptions = [];
-  _allGraded.forEach(function(g) {
+  _allRows.forEach(function(g) {
     if (g.course_id && !seen[g.course_id]) {
       seen[g.course_id] = true;
       courseOptions.push({ id: g.course_id, name: g.course_name });
@@ -174,6 +187,18 @@ function renderGradesTable(data) {
 
   var html = '';
   data.forEach(function(g) {
+    if (g.pending) {
+      // 已提交但分数待教师审核：占位行
+      html +=
+        '<tr>' +
+          '<td>' + escapeHtml(g.assignment_title) + '</td>' +
+          '<td>' + escapeHtml(g.course_name) + '</td>' +
+          '<td><span class="grade-score" style="color:#d2991b">待审核</span></td>' +
+          '<td><span class="grade-feedback">教师审核通过后显示</span></td>' +
+          '<td>-</td>' +
+        '</tr>';
+      return;
+    }
     var gradeClass = gradeClassOf(g.grade);
     var feedback = g.feedback ? escapeHtml(g.feedback) : '-';
     html +=

@@ -116,12 +116,12 @@ function loadData() {
 }
 
 // 状态判断
+// 注意：只要存在提交记录，就只可能是「已批改」或「已提交」；
+// 「逾期」仅用于"完全没有提交"的作业（在别处单独生成），
+// 否则"已提交但分数因待审核被隐藏 + 已过截止"会被误判成逾期。
 function getSubmissionStatus(submission, assignment) {
   if (submission.grade !== null && submission.grade !== undefined) {
     return 'graded';
-  }
-  if (assignment && assignment.deadline && parseCST(assignment.deadline) < cstNow()) {
-    return 'overdue';
   }
   return 'submitted';
 }
@@ -191,8 +191,9 @@ function renderTable(rows) {
         actions.push('<button class="btn btn-secondary" style="font-size:.72rem;padding:4px 12px;margin-right:4px" ' +
                      'onclick="triggerResubmit(' + s.id + ')">重新提交</button>');
       }
-      // 已提交且逾期 → 若无 pending/approved 补交则显示"申请补交"
-      if (status === 'overdue') {
+      // 真正"迟交"（提交时间晚于截止）才走补交流程；按时提交不显示逾期/补交
+      var submittedLate = deadline && s.submitted_at && parseCST(s.submitted_at) > deadline;
+      if (submittedLate) {
         var lateForSub = lateSubmissionMap['s-' + s.id] || (a ? lateSubmissionMap['a-' + a.id] : null);
         if (lateForSub) {
           var lateLabel = lateForSub.status === 'approved' ? '已批准' :

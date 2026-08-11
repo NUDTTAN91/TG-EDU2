@@ -576,8 +576,9 @@ def _mask_unreviewed(items, is_student: bool):
     if not is_student:
         return items
     for it in items:
-        if it.graded_by is None:
-            it.grade = None
+        # 仅当"还没有任何分数"（AI 草稿/待审核）时隐藏评语与建议分；
+        # 一旦有分数（人工批改，或强制审核上线前旧版 AI 直落）即视为最终成绩，对学生可见
+        if it.grade is None:
             it.feedback = ""
             it.ai_suggested_grade = None
     return items
@@ -619,9 +620,8 @@ async def get_submission(
         raise HTTPException(status_code=404, detail="提交不存在")
     await _authorize_submission_access(db, submission, current_user)
     data = SubmissionResponse.model_validate(submission)
-    if current_user.role == "student" and data.graded_by is None:
-        # 未人工审核的分数/评语/AI建议分（AI 草稿、历史 direct 遗留）对学生不可见
-        data.grade = None
+    if current_user.role == "student" and data.grade is None:
+        # 还没有任何分数（AI 草稿/待审核）：隐藏评语与建议分
         data.feedback = ""
         data.ai_suggested_grade = None
     return data

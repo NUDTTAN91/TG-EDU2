@@ -62,6 +62,7 @@
                 var toggleText = u.is_active ? '禁用' : '启用';
                 var toggleColor = u.is_active ? '#e74c3c' : '#27ae60';
                 actionHtml = '<button class="btn btn-secondary btn-toggle" data-id="' + u.id + '" style="color:' + toggleColor + '">' + toggleText + '</button> '
+                    + '<button class="btn btn-secondary btn-reset" data-id="' + u.id + '" data-name="' + escapeHtml(u.username) + '" style="color:#e67e22">重置密码</button> '
                     + '<button class="btn btn-secondary btn-delete" data-id="' + u.id + '" data-name="' + escapeHtml(u.username) + '" style="color:#e74c3c">删除</button>';
             }
             var displayName = escapeHtml(u.full_name || u.username);
@@ -90,6 +91,7 @@
         });
         bindToggle();
         bindDelete();
+        bindReset();
     }
 
     function showError(msg) {
@@ -237,6 +239,83 @@
         btns.forEach(function(btn) {
             btn.addEventListener('click', function() {
                 openDeleteModal(btn.getAttribute('data-id'), btn.getAttribute('data-name'));
+            });
+        });
+    }
+
+    // --- 重置密码弹窗（一次性临时密码 + 复制） ---
+    var resetOverlay = document.getElementById('reset-modal-overlay');
+    var resetNameEl = document.getElementById('reset-modal-name');
+    var resetErrorEl = document.getElementById('reset-modal-error');
+    var resetResultEl = document.getElementById('reset-modal-result');
+    var resetTempPwEl = document.getElementById('reset-temp-pw');
+    var resetActionsEl = document.getElementById('reset-modal-actions');
+    var resetDoneWrap = document.getElementById('reset-modal-done-wrap');
+    var resetConfirmBtn = document.getElementById('reset-modal-confirm');
+    var resetCancelBtn = document.getElementById('reset-modal-cancel');
+    var resetCloseBtn = document.getElementById('reset-modal-close');
+    var resetCopyBtn = document.getElementById('reset-copy-btn');
+    var pendingResetId = null;
+
+    function openResetModal(id, name) {
+        pendingResetId = id;
+        resetNameEl.textContent = name || '';
+        resetErrorEl.style.display = 'none';
+        resetResultEl.style.display = 'none';
+        resetActionsEl.style.display = 'flex';
+        resetDoneWrap.style.display = 'none';
+        resetOverlay.style.display = 'flex';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    function closeResetModal() {
+        resetOverlay.style.display = 'none';
+        pendingResetId = null;
+    }
+    resetCancelBtn.addEventListener('click', closeResetModal);
+    resetCloseBtn.addEventListener('click', closeResetModal);
+    resetOverlay.addEventListener('click', function(e) { if (e.target === resetOverlay) closeResetModal(); });
+    resetCopyBtn.addEventListener('click', function() {
+        var pw = resetTempPwEl.textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pw).then(function() {
+                resetCopyBtn.textContent = '已复制';
+                setTimeout(function() { resetCopyBtn.textContent = '复制'; }, 1500);
+            });
+        } else {
+            // 回退：临时输入框选中复制
+            var ta = document.createElement('textarea');
+            ta.value = pw; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); resetCopyBtn.textContent = '已复制';
+                setTimeout(function() { resetCopyBtn.textContent = '复制'; }, 1500); } catch (e) {}
+            document.body.removeChild(ta);
+        }
+    });
+    resetConfirmBtn.addEventListener('click', function() {
+        if (!pendingResetId) return;
+        var id = pendingResetId;
+        resetConfirmBtn.disabled = true;
+        resetConfirmBtn.textContent = '重置中…';
+        API.post('/admin/users/' + id + '/reset-password').then(function(res) {
+            resetErrorEl.style.display = 'none';
+            resetTempPwEl.textContent = res.temp_password || '';
+            resetActionsEl.style.display = 'none';
+            resetResultEl.style.display = 'block';
+            resetDoneWrap.style.display = 'flex';
+            loadUsers();
+        }).catch(function(err) {
+            resetErrorEl.textContent = err.message || '重置失败';
+            resetErrorEl.style.display = 'block';
+        }).then(function() {
+            resetConfirmBtn.disabled = false;
+            resetConfirmBtn.textContent = '确认重置';
+        });
+    });
+
+    function bindReset() {
+        var btns = tbody.querySelectorAll('.btn-reset');
+        btns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                openResetModal(btn.getAttribute('data-id'), btn.getAttribute('data-name'));
             });
         });
     }

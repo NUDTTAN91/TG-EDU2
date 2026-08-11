@@ -111,6 +111,10 @@ var Auth = {
                 '</div>' +
                 '<form id="fcpForm" onsubmit="return false;">' +
                     '<div class="fcp-field">' +
+                        '<label class="fcp-label">当前密码 <span style="color:red">*</span></label>' +
+                        '<input type="password" class="fcp-input" id="fcpCurPw" placeholder="输入管理员给你的临时密码" autocomplete="current-password">' +
+                    '</div>' +
+                    '<div class="fcp-field">' +
                         '<label class="fcp-label">新密码 <span style="color:red">*</span></label>' +
                         '<input type="password" class="fcp-input" id="fcpNewPw" placeholder="至少8位，含大小写字母和数字" autocomplete="new-password">' +
                     '</div>' +
@@ -238,6 +242,7 @@ var Auth = {
 
     // 提交强制改密（内部方法）
     _submitForceChangePassword: function(onSuccess) {
+        var curPw = document.getElementById('fcpCurPw').value;
         var newPw = document.getElementById('fcpNewPw').value;
         var confirmPw = document.getElementById('fcpConfirmPw').value;
         var errEl = document.getElementById('fcpError');
@@ -245,6 +250,7 @@ var Auth = {
 
         errEl.textContent = '';
 
+        if (!curPw) { errEl.textContent = '请输入当前密码（管理员给你的临时密码）'; return; }
         if (!newPw) { errEl.textContent = '请输入新密码'; return; }
         if (newPw.length < 8) { errEl.textContent = '新密码至少 8 位'; return; }
         if (!/[a-z]/.test(newPw)) { errEl.textContent = '新密码必须包含小写字母'; return; }
@@ -257,7 +263,7 @@ var Auth = {
         btn.textContent = '修改中…';
 
         API.post('/auth/change-password', {
-            old_password: "123456",
+            old_password: curPw,
             new_password: newPw
         }).then(function() {
             // 刷新用户信息

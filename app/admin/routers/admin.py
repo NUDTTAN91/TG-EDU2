@@ -1,4 +1,6 @@
 from io import BytesIO
+import secrets
+import string
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func, update
@@ -13,6 +15,7 @@ from app.models.late_submission import LateSubmission
 from app.models.audit_log import AuditLog
 from app.models.school_class import class_students
 from app.utils.dependencies import require_role
+from app.utils.security import get_password_hash
 from app.admin.services import admin_service
 from app.utils.audit import log_action
 from app.utils.ip_util import get_client_ip
@@ -269,3 +272,53 @@ async def delete_user(
         ip_address=get_client_ip(request),
     )
     return {"message": f"账号 {username_snapshot} 已删除"}
+
+
+def _gen_temp_password(length: int = 10) -> str:
+    """生成满足强度要求（含大小写+数字）的随机临时密码。"""
+    alphabet = string.ascii_letters + string.digits
+    while True:
+        pwd = "".join(secrets.choice(alphabet) for _ in range(length))
+        if (any(c.islower() for c in pwd)
+                and any(c.isupper() for c in pwd)
+                and any(c.isdigit() for c in pwd)):
+            return pwd
+
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """管理员重置某用户密码：生成一次性临时密码并强制下次登录修改。
+    临时密码仅本次响应返回一次，请管理员转告用户。"""
+    from app.admin.services.admin_service import get_user_by_id
+    target = await get_user_by_id(db, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    if target.role == "admin":
+        raise HTTPException(status_code=403, detail="不能重置管理员账号")
+    if user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="不能重置当前登录账号")
+
+    temp_password = _gen_temp_password()
+    target.password_hash = get_password_hash(temp_password)
+    target.must_change_password = True
+    db.add(target)
+    await db.commit()
+    await log_action(
+        db,
+        action="reset_password",
+        category="user_management",
+        user_id=current_user.id,
+        username=current_user.username,
+        detail=f"重置了用户 {target.username} 的密码（临时密码已生成，强制下次登录修改）",
+        ip_address=get_client_ip(request),
+    )
+    return {
+        "message": f"用户 {target.username} 的密码已重置",
+        "username": target.username,
+        "temp_password": temp_password,
+    }

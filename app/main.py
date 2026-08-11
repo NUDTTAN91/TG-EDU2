@@ -40,6 +40,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title=settings.PROJECT_NAME, lifespan=lifespan)
 
+
+@app.middleware("http")
+async def no_cache_static(request: Request, call_next):
+    """前端静态资源(html/js/css)禁止缓存，杜绝浏览器吃陈旧 JS/CSS 导致"改了看不到"。"""
+    response = await call_next(request)
+    if request.url.path.endswith((".html", ".js", ".css")):
+        response.headers["Cache-Control"] = "no-store, max-age=0, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
 app.include_router(auth.router)
 app.include_router(courses.router)
 app.include_router(classes.router)

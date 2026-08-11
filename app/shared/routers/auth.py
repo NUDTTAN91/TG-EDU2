@@ -98,11 +98,15 @@ async def change_password(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    if not verify_password(request.old_password, current_user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="原密码错误",
-        )
+    # 强制改密状态（must_change_password=True，如管理员重置后）：
+    # 本次登录已用当前密码认证过，跳过旧密码校验——兼容旧版前端缓存
+    # 仍发送占位旧密码(123456)的情况；正常改密仍严格校验旧密码。
+    if not current_user.must_change_password:
+        if not verify_password(request.old_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="原密码错误",
+            )
     # 密码强度验证：至少8位，必须包含大小写字母和数字
     if len(request.new_password) < 8:
         raise HTTPException(status_code=400, detail="新密码至少8位")
