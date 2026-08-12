@@ -369,20 +369,64 @@ function handlePublish() {
     btn.textContent = '发布中…';
     btn.disabled = true;
 
-    API.post('/assignments/', payload).then(function() {
-        btn.textContent = '✓ 已发布';
-        showToast('作业发布成功！', false);
-        setTimeout(function() {
-            resetCreateForm();
-            btn.textContent = '发布作业 →';
-            btn.disabled = false;
-            loadAssignmentList();
-        }, 1000);
+    API.post('/assignments/', payload).then(function(created) {
+        // 发布成功后上传所选附件（若有）
+        var files = (document.getElementById('attachmentInput').files || []);
+        var up = (created && created.id && files.length)
+            ? uploadAttachments(created.id)
+            : Promise.resolve();
+        return up.then(function() {
+            btn.textContent = '✓ 已发布';
+            showToast(files.length ? '作业发布成功，附件已上传！' : '作业发布成功！', false);
+            setTimeout(function() {
+                resetCreateForm();
+                btn.textContent = '发布作业 →';
+                btn.disabled = false;
+                loadAssignmentList();
+            }, 1000);
+        });
     }).catch(function(err) {
         btn.textContent = '发布作业 →';
         btn.disabled = false;
         showToast(err.message || '发布失败，请重试', true);
     });
+}
+
+// ===== 附件（材料/卷子）=====
+function uploadAttachments(assignmentId) {
+    var input = document.getElementById('attachmentInput');
+    var files = input.files || [];
+    if (!files.length) return Promise.resolve();
+    var fd = new FormData();
+    for (var i = 0; i < files.length; i++) fd.append('files', files[i]);
+    return API.upload('/assignments/' + assignmentId + '/attachments', fd)
+        .then(function() { input.value = ''; })
+        .catch(function(err) { showToast('附件上传失败：' + (err.message || ''), true); });
+}
+
+function loadAttachmentList(assignmentId) {
+    var box = document.getElementById('attachmentList');
+    if (!box) return;
+    API.get('/assignments/' + assignmentId + '/attachments').then(function(list) {
+        if (!list || !list.length) { box.innerHTML = ''; return; }
+        box.innerHTML = list.map(function(a) {
+            return '<div style="margin:2px 0">' + escapeHtml(a.file_name)
+                + ' <a href="javascript:void(0)" style="color:#58a6ff" onclick="downloadAttachment(' + a.id + ',\'' + escapeHtml(a.file_name).replace(/'/g, "\\'") + '\')">下载</a>'
+                + ' <a href="javascript:void(0)" style="color:#e74c3c" onclick="deleteAttachment(' + a.id + ',' + assignmentId + ')">删除</a></div>';
+        }).join('');
+    }).catch(function() { box.innerHTML = ''; });
+}
+
+function downloadAttachment(attId, name) {
+    API.download('/assignments/attachments/' + attId + '/download', name)
+        .catch(function(err) { showToast('下载失败：' + (err.message || ''), true); });
+}
+
+function deleteAttachment(attId, assignmentId) {
+    if (!confirm('确定删除该附件？')) return;
+    API.delete('/assignments/attachments/' + attId).then(function() {
+        loadAttachmentList(assignmentId);
+    }).catch(function(err) { showToast('删除失败：' + (err.message || ''), true); });
 }
 
 // ===== Existing Assignments List =====
@@ -441,6 +485,10 @@ function editAssignment(assignId) {
 
     // Switch to create tab
     switchAssignTab('create');
+    // 加载已有附件并清空待上传输入
+    var attInput = document.getElementById('attachmentInput');
+    if (attInput) attInput.value = '';
+    loadAttachmentList(assignId);
 
     // Fill basic fields
     document.getElementById('titleInput').value = a.title || '';
@@ -533,19 +581,26 @@ function saveEditAssignment() {
     btn.disabled = true;
 
     API.put('/assignments/' + editingAssignmentId, payload).then(function() {
-        btn.textContent = '✓ 已保存';
-        showToast('作业已更新', false);
-        setTimeout(function() {
-            // Reset edit state
-            editingAssignmentId = null;
-            btn.textContent = '发布作业 →';
-            btn.disabled = false;
-            btn.onclick = handlePublish;
-            // Clear form
-            resetCreateForm();
-            // Switch back to list
-            switchAssignTab('list');
-        }, 1000);
+        // 保存后上传新选择的附件（若有）
+        var files = (document.getElementById('attachmentInput').files || []);
+        var up = (files.length && editingAssignmentId)
+            ? uploadAttachments(editingAssignmentId)
+            : Promise.resolve();
+        return up.then(function() {
+            btn.textContent = '✓ 已保存';
+            showToast(files.length ? '作业已更新，附件已上传' : '作业已更新', false);
+            setTimeout(function() {
+                // Reset edit state
+                editingAssignmentId = null;
+                btn.textContent = '发布作业 →';
+                btn.disabled = false;
+                btn.onclick = handlePublish;
+                // Clear form
+                resetCreateForm();
+                // Switch back to list
+                switchAssignTab('list');
+            }, 1000);
+        });
     }).catch(function(err) {
         btn.textContent = '保存修改 →';
         btn.disabled = false;

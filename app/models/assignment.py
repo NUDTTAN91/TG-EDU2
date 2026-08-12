@@ -31,4 +31,5 @@ class Assignment(Base):
 
     course = relationship("Course", back_populates="assignments")
     submissions = relationship("Submission", back_populates="assignment")
+    attachments_files = relationship("AssignmentAttachment", back_populates="assignment", cascade="all, delete-orphan")
     classes = relationship("Class", secondary=assignment_classes)

@@ -1,19 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete as sql_delete
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from datetime import datetime
+import os
+import uuid
 from app.database import get_db
+from app.config import settings
 from app.models.user import User
 from app.models.assignment import Assignment, assignment_classes
+from app.models.assignment_attachment import AssignmentAttachment
 from app.models.course import Course
 from app.models.submission import Submission
 from app.models.school_class import Class, class_students, class_courses
 from app.utils.dependencies import get_current_user, require_role
+from app.utils.time_util import cst_now
 from app.teacher.services import assignment_service
 
 router = APIRouter(prefix="/api/assignments", tags=["作业"])
+
+# 作业附件（材料/卷子）允许格式与存储
+ATTACHMENT_EXTS = {
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+    ".zip", ".rar", ".7z", ".png", ".jpg", ".jpeg", ".txt", ".md",
+}
+ATTACHMENT_DIR = os.path.join("data", "attachments")
+MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024  # 100MB
 
 
 class AssignmentCreate(BaseModel):
@@ -264,6 +278,177 @@ async def delete_assignment(
     # Delete associated submissions first
     await db.execute(sql_delete(Submission).where(Submission.assignment_id == assignment_id))
     await db.execute(assignment_classes.delete().where(assignment_classes.c.assignment_id == assignment_id))
+    # 清理附件文件 + 记录
+    atts = (await db.execute(
+        select(AssignmentAttachment).where(AssignmentAttachment.assignment_id == assignment_id)
+    )).scalars().all()
+    for at in atts:
+        try:
+            if at.file_path and os.path.isfile(at.file_path):
+                os.remove(at.file_path)
+        except OSError:
+            pass
+    await db.execute(sql_delete(AssignmentAttachment).where(AssignmentAttachment.assignment_id == assignment_id))
     await db.delete(assignment)
     await db.commit()
     return {"message": "作业已删除"}
+
+
+# ============================================================================
+# 作业附件（教师上传材料/卷子，学生可下载）
+# ============================================================================
+
+async def _owner_or_admin(db: AsyncSession, assignment: Assignment, current_user: User):
+    if current_user.role == "admin":
+        return
+    course = (await db.execute(select(Course).where(Course.id == assignment.course_id))).scalar_one_or_none()
+    if not course or course.teacher_id != current_user.id:
+        raise HTTPException(status_code=403, detail="无权操作此作业的附件")
+
+
+async def _student_can_view_assignment(db: AsyncSession, assignment: Assignment, current_user: User) -> bool:
+    """学生可见性：作业定向到其班级，或作业无定向但其班级关联了该课程。"""
+    my_class_ids = (await db.execute(
+        select(class_students.c.class_id).where(class_students.c.student_id == current_user.id)
+    )).scalars().all()
+    if not my_class_ids:
+        return False
+    targeted = (await db.execute(
+        select(assignment_classes.c.class_id).where(assignment_classes.c.assignment_id == assignment.id)
+    )).scalars().all()
+    if targeted:
+        return bool(set(targeted) & set(my_class_ids))
+    linked = (await db.execute(
+        select(class_courses.c.class_id).where(
+            class_courses.c.course_id == assignment.course_id,
+            class_courses.c.class_id.in_(my_class_ids),
+        )
+    )).scalars().all()
+    return bool(linked)
+
+
+@router.post("/{assignment_id}/attachments")
+async def upload_attachments(
+    assignment_id: int,
+    files: List[UploadFile] = File(...),
+    current_user: User = Depends(require_role("admin", "teacher")),
+    db: AsyncSession = Depends(get_db),
+):
+    assignment = await assignment_service.get_assignment(db, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    await _owner_or_admin(db, assignment, current_user)
+
+    saved = []
+    for f in files:
+        safe_name = os.path.basename(f.filename or "attachment")
+        ext = os.path.splitext(safe_name)[1].lower()
+        if ext not in ATTACHMENT_EXTS:
+            raise HTTPException(status_code=400, detail=f"不支持的附件格式: {ext or '未知'}")
+        data = await f.read()
+        if len(data) > MAX_ATTACHMENT_BYTES:
+            raise HTTPException(status_code=400, detail=f"附件 {safe_name} 超过 100MB 限制")
+        dir_path = os.path.join(ATTACHMENT_DIR, str(assignment_id))
+        os.makedirs(dir_path, exist_ok=True)
+        store_name = f"{uuid.uuid4().hex}_{safe_name}"
+        full_path = os.path.join(dir_path, store_name)
+        with open(full_path, "wb") as out:
+            out.write(data)
+        att = AssignmentAttachment(
+            assignment_id=assignment_id,
+            file_name=safe_name,
+            file_path=full_path,
+            file_size=len(data),
+        )
+        db.add(att)
+        saved.append(att)
+    await db.commit()
+    for at in saved:
+        await db.refresh(at)
+    return {
+        "message": f"已上传 {len(saved)} 个附件",
+        "attachments": [
+            {"id": at.id, "file_name": at.file_name, "file_size": at.file_size}
+            for at in saved
+        ],
+    }
+
+
+@router.get("/{assignment_id}/attachments")
+async def list_attachments(
+    assignment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    assignment = await assignment_service.get_assignment(db, assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    if current_user.role == "student":
+        if not await _student_can_view_assignment(db, assignment, current_user):
+            raise HTTPException(status_code=403, detail="无权查看此作业附件")
+    elif current_user.role == "teacher":
+        await _owner_or_admin(db, assignment, current_user)
+    atts = (await db.execute(
+        select(AssignmentAttachment)
+        .where(AssignmentAttachment.assignment_id == assignment_id)
+        .order_by(AssignmentAttachment.id)
+    )).scalars().all()
+    return [
+        {"id": at.id, "file_name": at.file_name, "file_size": at.file_size,
+         "created_at": at.created_at}
+        for at in atts
+    ]
+
+
+@router.get("/attachments/{att_id}/download")
+async def download_attachment(
+    att_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    att = (await db.execute(
+        select(AssignmentAttachment).where(AssignmentAttachment.id == att_id)
+    )).scalar_one_or_none()
+    if not att:
+        raise HTTPException(status_code=404, detail="附件不存在")
+    assignment = await assignment_service.get_assignment(db, att.assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    if current_user.role == "student":
+        if not await _student_can_view_assignment(db, assignment, current_user):
+            raise HTTPException(status_code=403, detail="无权下载此附件")
+    elif current_user.role == "teacher":
+        await _owner_or_admin(db, assignment, current_user)
+    if not att.file_path or not os.path.isfile(att.file_path):
+        raise HTTPException(status_code=404, detail="附件文件已丢失")
+    return FileResponse(
+        path=att.file_path,
+        filename=att.file_name,
+        media_type="application/octet-stream",
+        headers={"X-Content-Type-Options": "nosniff"},
+    )
+
+
+@router.delete("/attachments/{att_id}")
+async def delete_attachment(
+    att_id: int,
+    current_user: User = Depends(require_role("admin", "teacher")),
+    db: AsyncSession = Depends(get_db),
+):
+    att = (await db.execute(
+        select(AssignmentAttachment).where(AssignmentAttachment.id == att_id)
+    )).scalar_one_or_none()
+    if not att:
+        raise HTTPException(status_code=404, detail="附件不存在")
+    assignment = await assignment_service.get_assignment(db, att.assignment_id)
+    if not assignment:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    await _owner_or_admin(db, assignment, current_user)
+    try:
+        if att.file_path and os.path.isfile(att.file_path):
+            os.remove(att.file_path)
+    except OSError:
+        pass
+    await db.delete(att)
+    await db.commit()
+    return {"message": "附件已删除"}

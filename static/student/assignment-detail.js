@@ -43,11 +43,13 @@ function loadAssignmentDetail(id) {
     Promise.all([
         API.get('/assignments/' + id),
         API.get('/submissions/'),
-        API.get('/courses/')
+        API.get('/courses/'),
+        API.get('/assignments/' + id + '/attachments').catch(function() { return []; })
     ]).then(function(results) {
         var assignment = results[0];
         var submissions = Array.isArray(results[1]) ? results[1] : (results[1] && results[1].items ? results[1].items : []);
         var courses = Array.isArray(results[2]) ? results[2] : (results[2] && results[2].items ? results[2].items : []);
+        var attachments = Array.isArray(results[3]) ? results[3] : [];
 
         if (!assignment) {
             document.getElementById('assignment-detail-card').innerHTML = '<div style="padding:40px;text-align:center">作业不存在</div>';
@@ -70,6 +72,9 @@ function loadAssignmentDetail(id) {
 
         // 渲染详情卡片
         renderDetailCard(assignment, courseName, mySubmission);
+
+        // 渲染作业附件（材料/卷子下载）
+        renderAttachments(attachments);
 
         // 显示/隐藏提交区域
         var isOverdue = assignment.deadline && parseCST(assignment.deadline) < cstNow();
@@ -157,6 +162,29 @@ function renderDetailCard(assignment, courseName, submission) {
             '<span style="display:flex;align-items:center;gap:4px"><i data-lucide="user" style="width:13px;height:13px"></i> 教师发布</span>' +
             '<span style="display:flex;align-items:center;gap:4px"><i data-lucide="calendar" style="width:13px;height:13px"></i> ' + createdText + '</span>' +
         '</div>';
+}
+
+function renderAttachments(list) {
+    var section = document.getElementById('attachment-section');
+    var box = document.getElementById('attachment-list');
+    if (!section || !box) return;
+    if (!list || !list.length) { section.style.display = 'none'; box.innerHTML = ''; return; }
+    box.innerHTML = list.map(function(a) {
+        var size = a.file_size ? (' (' + formatFileSize(a.file_size) + ')') : '';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border,#eee)">'
+            + '<span><i data-lucide="file" style="width:14px;height:14px;vertical-align:-2px"></i> '
+            + escapeHtml(a.file_name) + '<span style="color:#999;font-size:.78rem">' + size + '</span></span>'
+            + '<a href="javascript:void(0)" style="color:var(--blue,#58a6ff);font-size:.82rem" '
+            + 'onclick="downloadAttachment(' + a.id + ', \'' + escapeHtml(a.file_name).replace(/'/g, "\\'") + '\')">下载</a>'
+            + '</div>';
+    }).join('');
+    section.style.display = '';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function downloadAttachment(attId, name) {
+    API.download('/assignments/attachments/' + attId + '/download', name)
+        .catch(function(err) { showToast('下载失败：' + (err.message || ''), true); });
 }
 
 function renderSubmissionRecord(submission, assignment) {
