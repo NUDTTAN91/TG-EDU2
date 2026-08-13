@@ -362,6 +362,7 @@ function handlePublish() {
         deadline: deadline ? deadline + ':00' : null,
         attachments: attachments,
         auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on'),
+        ai_grading_prompt: (document.getElementById('aiPromptInput').value || '').trim(),
         class_ids: classIds
     };
 
@@ -506,6 +507,10 @@ function editAssignment(assignId) {
     // 回填自动批改开关
     document.getElementById('autoAiToggle').classList.toggle('on', !!a.auto_ai_grade);
 
+    // 回填 AI 批改额外要求，并清空待上传文件
+    document.getElementById('aiPromptInput').value = a.ai_grading_prompt || '';
+    document.getElementById('aiPromptFile').value = '';
+
     // Cascade: school → classes → course
     var course = allCourses.find(function(c) { return c.id === a.course_id; });
     var schoolId = course ? String(course.school_id || '') : '';
@@ -573,6 +578,7 @@ function saveEditAssignment() {
         deadline: deadline ? deadline + ':00' : null,
         attachments: attachments,
         auto_ai_grade: document.getElementById('autoAiToggle').classList.contains('on'),
+        ai_grading_prompt: (document.getElementById('aiPromptInput').value || '').trim(),
         class_ids: classIds
     };
 
@@ -611,6 +617,10 @@ function saveEditAssignment() {
 function resetCreateForm() {
     document.getElementById('titleInput').value = '';
     document.getElementById('descInput').value = '';
+    var aiP = document.getElementById('aiPromptInput');
+    if (aiP) aiP.value = '';
+    var aiF = document.getElementById('aiPromptFile');
+    if (aiF) aiF.value = '';
     document.getElementById('deadlineInput').value = '';
     document.getElementById('scoreInput').value = '100';
     document.getElementById('schoolSelect').value = '';
@@ -653,6 +663,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var filterEl = document.getElementById('a-filter-course');
     if (filterEl) filterEl.addEventListener('change', renderAssignments);
+
+    // AI 批改额外要求：选择 .txt/.md 文件后读取内容追加进文本框
+    var aiFile = document.getElementById('aiPromptFile');
+    if (aiFile) aiFile.addEventListener('change', function() {
+        var f = this.files && this.files[0];
+        if (!f) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var txt = String(e.target.result || '');
+            var box = document.getElementById('aiPromptInput');
+            if (!box) return;
+            box.value = (box.value.trim() ? box.value.trim() + '\n\n' : '') + txt;
+            showToast('已读取文件内容到额外要求框', false);
+        };
+        reader.onerror = function() { showToast('文件读取失败', true); };
+        reader.readAsText(f);
+    });
 
     loadAllData();
 });

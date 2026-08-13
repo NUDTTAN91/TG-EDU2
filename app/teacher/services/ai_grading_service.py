@@ -153,6 +153,16 @@ SYSTEM_PROMPT = (
 
 def build_messages(assignment: Assignment, kind: str, payload, cfg: dict) -> list:
     criteria = f"作业标题：{assignment.title}\n作业要求：{assignment.description or '（无）'}"
+    # 教师批改额外要求：作为最高优先级置于系统提示词最前，仅发给 AI，学生不可见
+    extra = (getattr(assignment, "ai_grading_prompt", "") or "").strip()
+    system_content = SYSTEM_PROMPT
+    if extra:
+        system_content = (
+            "【最高优先级·教师批改指令，必须优先于以下通用规则严格遵守】\n"
+            + extra
+            + "\n\n"
+            + SYSTEM_PROMPT
+        )
     if kind == "images":
         content = []
         for p in payload:
@@ -166,7 +176,7 @@ def build_messages(assignment: Assignment, kind: str, payload, cfg: dict) -> lis
     else:
         content = [{"type": "text", "text": f"{criteria}\n\n<submission>\n{payload}\n</submission>\n\n请批改这份提交。"}]
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_content},
         {"role": "user", "content": content},
     ]
 

@@ -26,6 +26,7 @@ class Assignment(Base):
     max_file_size_mb = Column(Integer, default=50)
     folder_name = Column(String(500), nullable=True)
     auto_ai_grade = Column(Boolean, default=False)  # 提交即自动 AI 批改
+    ai_grading_prompt = Column(Text, default="")  # AI 批改额外要求（仅发给 AI、最高优先级，学生不可见）
     created_at = Column(DateTime, default=cst_now)
     updated_at = Column(DateTime, default=cst_now, onupdate=cst_now)
 

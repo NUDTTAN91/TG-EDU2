@@ -38,6 +38,7 @@ class AssignmentCreate(BaseModel):
     attachments: str = ".cpp,.c,.java,.py,.zip"
     max_file_size_mb: int = 50
     auto_ai_grade: bool = False
+    ai_grading_prompt: str = ""
     class_ids: Optional[List[int]] = None
 
     @field_validator("attachments")
@@ -63,6 +64,7 @@ class AssignmentUpdate(BaseModel):
     attachments: Optional[str] = None
     max_file_size_mb: Optional[int] = None
     auto_ai_grade: Optional[bool] = None
+    ai_grading_prompt: Optional[str] = None
     class_ids: Optional[List[int]] = None
 
     @field_validator("attachments")
@@ -94,6 +96,7 @@ class AssignmentResponse(BaseModel):
     attachments: str
     max_file_size_mb: int
     auto_ai_grade: bool = False
+    ai_grading_prompt: str = ""
     class_ids: List[int] = []
     created_at: datetime
 
@@ -133,11 +136,14 @@ async def _set_assignment_classes(db: AsyncSession, assignment_id: int, class_id
         await db.execute(assignment_classes.insert().values(assignment_id=assignment_id, class_id=cid))
 
 
-def _to_response(a: Assignment, class_ids) -> AssignmentResponse:
+def _to_response(a: Assignment, class_ids, show_prompt: bool = True) -> AssignmentResponse:
     return AssignmentResponse(
         id=a.id, title=a.title, description=a.description or "", course_id=a.course_id,
         deadline=a.deadline, attachments=a.attachments or "", max_file_size_mb=a.max_file_size_mb or 50,
-        auto_ai_grade=bool(a.auto_ai_grade), class_ids=class_ids or [], created_at=a.created_at,
+        auto_ai_grade=bool(a.auto_ai_grade),
+        # AI 批改额外要求仅教师/管理员可见，学生端置空
+        ai_grading_prompt=(a.ai_grading_prompt or "") if show_prompt else "",
+        class_ids=class_ids or [], created_at=a.created_at,
     )
 
 
@@ -187,7 +193,7 @@ async def list_assignments(
             return []
         assignments = (await db.execute(select(Assignment).where(Assignment.id.in_(ids)))).scalars().all()
         cmap = await _class_ids_map(db, [a.id for a in assignments])
-        return [_to_response(a, cmap.get(a.id)) for a in assignments]
+        return [_to_response(a, cmap.get(a.id), show_prompt=False) for a in assignments]
 
     assignments = result.scalars().all()
     cmap = await _class_ids_map(db, [a.id for a in assignments])
@@ -227,7 +233,7 @@ async def get_assignment(
     ids = (await db.execute(
         select(assignment_classes.c.class_id).where(assignment_classes.c.assignment_id == assignment_id)
     )).scalars().all()
-    return _to_response(assignment, list(ids))
+    return _to_response(assignment, list(ids), show_prompt=(current_user.role != "student"))
 
 
 @router.put("/{assignment_id}", response_model=AssignmentResponse)

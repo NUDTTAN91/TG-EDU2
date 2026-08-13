@@ -346,3 +346,16 @@ async def init_db():
                 connection.execute(text("ALTER TABLE submissions ADD COLUMN ai_suggested_grade INTEGER"))
 
         await conn.run_sync(_migrate_ai_suggested_grade)
+
+    # assignments 增加 AI 批改额外要求字段（仅发给 AI、最高优先级、学生不可见；幂等）
+    async with engine.begin() as conn:
+        def _migrate_ai_grading_prompt(connection):
+            from sqlalchemy import inspect, text
+            insp = inspect(connection)
+            if "assignments" not in insp.get_table_names():
+                return
+            cols = [c["name"] for c in insp.get_columns("assignments")]
+            if "ai_grading_prompt" not in cols:
+                connection.execute(text("ALTER TABLE assignments ADD COLUMN ai_grading_prompt TEXT DEFAULT ''"))
+
+        await conn.run_sync(_migrate_ai_grading_prompt)

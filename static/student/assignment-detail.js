@@ -164,6 +164,13 @@ function renderDetailCard(assignment, courseName, submission) {
         '</div>';
 }
 
+function formatFileSize(bytes) {
+    bytes = Number(bytes) || 0;
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
 function renderAttachments(list) {
     var section = document.getElementById('attachment-section');
     var box = document.getElementById('attachment-list');
