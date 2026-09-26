@@ -2,6 +2,7 @@ import logging
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from pathlib import Path
+from app import ai_models
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,8 @@ class Settings(BaseSettings):
     # AI 批改（小米 MiMo，OpenAI 兼容；.env 可覆盖，作为 DB 设置的兜底默认）
     AI_BASE_URL: str = "https://token-plan-cn.xiaomimimo.com/v1"
     AI_API_KEY: str = ""
-    AI_DOC_MODEL: str = "mimo-v2.5"        # pdf/doc/docx 图片路线
-    AI_TEXT_MODEL: str = "mimo-v2.5-pro"   # txt/md 文本路线
+    AI_DOC_MODEL: str = ai_models.DEFAULT_DOC_MODEL   # pdf/doc/docx 图片路线
+    AI_TEXT_MODEL: str = ai_models.DEFAULT_TEXT_MODEL  # txt/md 文本路线
     AI_THINKING: bool = True               # 思维链开关：开=更准更慢
     AI_DPI: int = 200
     AI_JPEG_QUALITY: int = 90

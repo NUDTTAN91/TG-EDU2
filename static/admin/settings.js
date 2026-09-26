@@ -36,11 +36,26 @@ document.addEventListener('DOMContentLoaded', function () {
         thinkToggle.classList.toggle('on');
     });
 
+    function fillSelect(sel, models, current) {
+        var list = models || [];
+        sel.innerHTML = list.map(function (m) {
+            return '<option value="' + m.id + '">' + (m.label || m.id) + '</option>';
+        }).join('');
+        var exists = list.some(function (m) { return m.id === current; });
+        if (current && !exists) {
+            var opt = document.createElement('option');
+            opt.value = current;
+            opt.textContent = current + '（已下线/自定义）';
+            sel.insertBefore(opt, sel.firstChild);
+        }
+        sel.value = current || (list[0] && list[0].id) || '';
+    }
+
     function load() {
         API.get('/admin/settings/ai').then(function (d) {
             baseInput.value = d.base_url || '';
-            docSel.value = d.doc_model || 'mimo-v2.5';
-            textSel.value = d.text_model || 'mimo-v2.5-pro';
+            fillSelect(docSel, d.models, d.doc_model);
+            fillSelect(textSel, d.models, d.text_model);
             thinkToggle.classList.toggle('on', !!d.thinking);
             keyInput.value = '';
             keyInput.placeholder = d.key_set ? ('已配置 ' + d.key_masked + '，留空保持') : '未配置';
@@ -50,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('saveSettingsBtn').addEventListener('click', function () {
+        if (!docSel.value || !textSel.value) {
+            toast('模型列表未加载完成，请刷新后重试', 'error');
+            return;
+        }
         API.put('/admin/settings/ai', {
             ai_base_url: baseInput.value.trim(),
             ai_api_key: keyInput.value,

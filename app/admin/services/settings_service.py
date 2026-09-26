@@ -1,8 +1,12 @@
 """系统设置服务：AI 批改配置的读取/保存/掩码。DB KV 优先，.env 兜底。"""
+import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app import ai_models
 from app.config import settings
 from app.models.setting import SystemSetting
+
+logger = logging.getLogger(__name__)
 
 AI_SETTING_KEYS = [
     "ai_base_url", "ai_api_key", "ai_doc_model", "ai_text_model",
@@ -29,6 +33,12 @@ async def get_ai_settings(db: AsyncSession) -> dict:
     for row in result.scalars().all():
         if row.key in out:
             out[row.key] = row.value or ""
+    # 已下线的模型名在读取时归一化为现行模型（只改内存，不写库）
+    for k in ("ai_doc_model", "ai_text_model"):
+        fixed = ai_models.resolve(out.get(k, ""))
+        if fixed != out.get(k, ""):
+            logger.warning("AI 模型 %s 已下线，运行时改用 %s", out.get(k, ""), fixed)
+            out[k] = fixed
     return out
 
 

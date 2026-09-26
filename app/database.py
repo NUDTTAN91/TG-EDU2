@@ -359,3 +359,21 @@ async def init_db():
                 connection.execute(text("ALTER TABLE assignments ADD COLUMN ai_grading_prompt TEXT DEFAULT ''"))
 
         await conn.run_sync(_migrate_ai_grading_prompt)
+
+    # system_settings 中已下线的 AI 模型名归一化为现行模型（幂等，防止旧值残留继续报错）
+    async with engine.begin() as conn:
+        def _migrate_ai_model_settings(connection):
+            from sqlalchemy import text
+            from app import ai_models
+            rows = connection.execute(text(
+                "SELECT key, value FROM system_settings WHERE key IN ('ai_doc_model','ai_text_model')"
+            )).all()
+            for key, value in rows:
+                fixed = ai_models.resolve(value or "")
+                if fixed and fixed != (value or ""):
+                    connection.execute(
+                        text("UPDATE system_settings SET value=:v WHERE key=:k"),
+                        {"v": fixed, "k": key},
+                    )
+
+        await conn.run_sync(_migrate_ai_model_settings)

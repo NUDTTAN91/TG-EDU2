@@ -3,7 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import Optional, List
 import httpx
+import logging
 
+from app import ai_models
 from app.database import get_db
 from app.models.user import User
 from app.utils.dependencies import require_role
@@ -12,6 +14,7 @@ from app.utils.ip_util import get_client_ip
 from app.admin.services import settings_service
 
 router = APIRouter(prefix="/api/admin/settings", tags=["系统设置"])
+logger = logging.getLogger(__name__)
 
 
 class AiSettingsUpdate(BaseModel):
@@ -43,6 +46,7 @@ async def get_ai_settings(
         "base_url": d["ai_base_url"],
         "doc_model": d["ai_doc_model"],
         "text_model": d["ai_text_model"],
+        "models": ai_models.catalog(),
         "thinking": d["ai_thinking"] == "1",
         "dpi": int(d["ai_dpi"]),
         "jpeg_quality": int(d["ai_jpeg_quality"]),
@@ -60,6 +64,16 @@ async def put_ai_settings(
     db: AsyncSession = Depends(get_db),
 ):
     payload = data.model_dump()
+    # 已下线的模型名归一化为现行模型；目录外模型名保留但告警（不硬拒绝，避免锁死未来新模型）
+    for k in ("ai_doc_model", "ai_text_model"):
+        v = payload.get(k)
+        if v:
+            fixed = ai_models.resolve(v)
+            if fixed != v:
+                logger.warning("保存的 AI 模型 %s 已下线，已自动改为 %s", v, fixed)
+                payload[k] = fixed
+            elif v not in {m["id"] for m in ai_models.MODELS}:
+                logger.warning("保存了目录外的 AI 模型：%s", v)
     if payload.get("ai_thinking") is not None:
         payload["ai_thinking"] = "1" if payload["ai_thinking"] else "0"
     await settings_service.set_ai_settings(db, payload)
@@ -88,6 +102,7 @@ async def test_ai_settings(
     api_key = data.ai_api_key or d["ai_api_key"]
     models: List[str] = []
     for m in [data.ai_doc_model or d["ai_doc_model"], data.ai_text_model or d["ai_text_model"]]:
+        m = ai_models.resolve(m)
         if m and m not in models:
             models.append(m)
     if not api_key:
